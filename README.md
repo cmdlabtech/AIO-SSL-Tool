@@ -19,3 +19,6 @@ The program supports PEM, CRT, and CER formats and includes functionality to fet
 - **Simple GUI**: Intuitive user interface built with Tkinter for easy file selection and execution.
 
 <!-- GitAds-Verify: U2PZCAGVH2BXULX6VEWZYE8ZHUEBDCHV -->
+
+## GitAds Sponsored
+[![Sponsored by GitAds](https://gitads.dev/v1/ad-serve?source=cmdlabtech/certextract@github)](https://gitads.dev/v1/ad-track?source=cmdlabtech/certextract@github)
