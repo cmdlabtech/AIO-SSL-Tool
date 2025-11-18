@@ -24,4 +24,4 @@ A lightweight, zero-install Windows GUI tool built for sysadmins and DevOps who 
 
 ### Build (optional)
 ```bash
-pyinstaller --onefile --windowed --icon=icon-ico.ico --name="AIO SSL Tool" ssl_gui_chain_extractor.py
+pyinstaller --onefile --windowed --icon=icon-ico.ico --name="AIO SSL Tool" aio_ssl_tool.py
