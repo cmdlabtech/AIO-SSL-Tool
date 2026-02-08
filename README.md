@@ -46,8 +46,6 @@ The macOS version includes built-in automatic updates powered by Sparkle:
 
 Updates can be managed in **Settings > Updates** within the app.
 
-For developers: See [Auto-Update Guide](macOS/AUTO_UPDATE_GUIDE.md) for setup instructions.
-
 ---
 
 ## 📝 License
