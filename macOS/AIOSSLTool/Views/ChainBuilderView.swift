@@ -33,11 +33,6 @@ struct ChainBuilderView: View {
                             .font(.caption)
                             .italic()
                     }
-                    Button("Change") {
-                        viewModel.selectSaveDirectory()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
                 .padding(8)
                 .background(.regularMaterial)

@@ -24,7 +24,10 @@ let package = Package(
                 "Info.plist",
                 "AIOSSLTool.entitlements",
                 "build.sh",
-                "Assets.xcassets"
+                "AIO SSL Tool.app",
+                "AIOSSLTool.dmg",
+                "AppIcon.icns",
+                "icon-source.png"
             ],
             sources: [
                 "AIOSSLToolApp.swift",

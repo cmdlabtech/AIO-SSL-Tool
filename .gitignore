@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+.venv/
 .env
+*.pyc
 
 # MacOS / Swift
 .DS_Store
@@ -12,12 +14,25 @@ venv/
 *.xcodeproj
 *.xcworkspace
 xcuserdata/
+DerivedData/
+
+# macOS build artifacts
+macOS/AIOSSLTool/*.app
+macOS/AIOSSLTool/*.dmg
+macOS/AIOSSLTool/icon-source.png
+macOS/AIOSSLTool/AppIcon.iconset/
 
 # IDEs
 .vscode/
 .idea/
 
-# Builds
+# Builds (exclude from root, but allow in releases/)
+/*.exe
 dist/
 build/
 *.spec
+
+# Temporary files
+*.log
+*.tmp
+.pytest_cache/
