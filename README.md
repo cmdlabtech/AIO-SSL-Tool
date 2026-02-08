@@ -15,7 +15,7 @@ A native macOS application and cross-platform desktop tool built for sysadmins a
 
 ### Installation
 
-**macOS:**  
+**macOS:*** ⚠️  
 The app is unsigned, so on first launch you'll need to right-click the app and select "Open" (or use System Settings → Privacy & Security → "Open Anyway").
 
 **Windows:**  
