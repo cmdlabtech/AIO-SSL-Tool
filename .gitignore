@@ -1,5 +1,5 @@
 # GitHub private files
-.github/
+.github/copilot-instructions.md
 
 # Python
 __pycache__/
