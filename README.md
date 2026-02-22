@@ -2,7 +2,9 @@
 
 **The fastest way to turn any server certificate into a complete, trusted chain and ready-to-use PFX — in seconds.**
 
-A native macOS application and cross-platform desktop tool built for sysadmins and DevOps who need perfect SSL certificates without the hassle.## 📥 Download Latest Version
+A native macOS application and cross-platform desktop tool built for sysadmins and DevOps who need perfect SSL certificates without the hassle.
+
+## 📥 Download Latest Version
 
 | Platform | Download | Requirements |
 |----------|----------|--------------|
