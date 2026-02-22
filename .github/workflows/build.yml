@@ -1,0 +1,178 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - 'V*'
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-macos:
+    name: Build macOS (Native Swift)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build
+        run: |
+          cd macOS/AIOSSLTool
+          swift build -c release
+
+      - name: Create .app Bundle
+        run: |
+          cd macOS/AIOSSLTool
+          
+          # Create App Bundle Structure
+          mkdir -p AIOSSLTool.app/Contents/MacOS
+          mkdir -p AIOSSLTool.app/Contents/Resources
+          
+          # Copy Binary
+          cp .build/release/AIOSSLTool AIOSSLTool.app/Contents/MacOS/
+          
+          # Copy Info.plist
+          if [ -f Info.plist ]; then
+            cp Info.plist AIOSSLTool.app/Contents/
+          else
+            # Fallback (though we created one earlier)
+            echo '<?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleExecutable</key>
+                <string>AIOSSLTool</string>
+                <key>CFBundleIdentifier</key>
+                <string>com.cmdlab.aiossltool</string>
+                <key>CFBundleName</key>
+                <string>AIO SSL Tool</string>
+                <key>CFBundlePackageType</key>
+                <string>APPL</string>
+                <key>CFBundleShortVersionString</key>
+                <string>6.0</string>
+            </dict>
+            </plist>' > AIOSSLTool.app/Contents/Info.plist
+          fi
+          
+          # Copy App Icon
+          if [ -f AppIcon.icns ]; then
+            cp AppIcon.icns AIOSSLTool.app/Contents/Resources/
+          fi
+          
+          # Copy Home Icon
+          if [ -f HomeIcon.png ]; then
+            cp HomeIcon.png AIOSSLTool.app/Contents/Resources/
+          fi
+          
+          # Ad-hoc sign the app bundle
+          codesign --force --deep --sign - AIOSSLTool.app
+
+      - name: Create DMG
+        run: |
+          cd macOS/AIOSSLTool
+          
+          # Install create-dmg
+          brew install create-dmg
+          
+          # Create DMG
+          create-dmg \
+            --volname "AIO SSL Tool Installer" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "AIOSSLTool.app" 200 190 \
+            --hide-extension "AIOSSLTool.app" \
+            --app-drop-link 600 185 \
+            "AIOSSLTool.dmg" \
+            "AIOSSLTool.app"
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: macOS/AIOSSLTool/AIOSSLTool.dmg
+
+  build-windows:
+    name: Build Windows (Python)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r windows/requirements.txt
+          
+      - name: Build with PyInstaller
+        run: |
+          # If icon exists, use it for both exe icon and runtime
+          if (Test-Path windows/icon-ico.ico) {
+            pyinstaller --clean --onefile --noconsole --name "AIO-SSL-Tool" --icon "windows/icon-ico.ico" --add-data "windows/icon-ico.ico;." windows/aio_ssl_tool.py
+          } else {
+            pyinstaller --clean --onefile --noconsole --name "AIO-SSL-Tool" windows/aio_ssl_tool.py
+          }
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: dist/AIO-SSL-Tool.exe
+
+  release:
+    name: Create Release
+    needs: [build-macos, build-windows]
+    if: startsWith(github.ref, 'refs/tags/V')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+        
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/V}" >> $GITHUB_OUTPUT
+        
+      - name: Rename assets to versioned names
+        run: |
+          mv artifacts/macos-build/AIOSSLTool.dmg "artifacts/macos-build/AIO-SSL-Tool-macOS-V${{ steps.version.outputs.VERSION }}.dmg"
+          mv artifacts/windows-build/AIO-SSL-Tool.exe "artifacts/windows-build/AIO-SSL-Tool-Windows-V${{ steps.version.outputs.VERSION }}.exe"
+        
+      - name: Get DMG file size
+        id: filesize
+        run: |
+          SIZE=$(stat -c%s "artifacts/macos-build/AIO-SSL-Tool-macOS-V${{ steps.version.outputs.VERSION }}.dmg" 2>/dev/null || stat -f%z "artifacts/macos-build/AIO-SSL-Tool-macOS-V${{ steps.version.outputs.VERSION }}.dmg")
+          echo "DMG_SIZE=$SIZE" >> $GITHUB_OUTPUT
+      
+      - name: Update README and appcast with new version
+        run: |
+          chmod +x ./update_version.sh
+          ./update_version.sh both ${{ steps.version.outputs.VERSION }} ${{ steps.filesize.outputs.DMG_SIZE }}
+          
+      - name: Commit version updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md appcast.xml
+          git diff --staged --quiet || git commit -m "Auto-update download links to V${{ steps.version.outputs.VERSION }}"
+          git push || true
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/macos-build/AIO-SSL-Tool-macOS-V${{ steps.version.outputs.VERSION }}.dmg
+            artifacts/windows-build/AIO-SSL-Tool-Windows-V${{ steps.version.outputs.VERSION }}.exe
+          generate_release_notes: true

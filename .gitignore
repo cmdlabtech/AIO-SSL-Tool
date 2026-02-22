@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env
+*.pyc
+
+# MacOS / Swift
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# macOS build artifacts
+macOS/AIOSSLTool/*.app
+macOS/AIOSSLTool/*.dmg
+macOS/AIOSSLTool/icon-source.png
+macOS/AIOSSLTool/AppIcon.iconset/
+
+# Release artifacts (DMGs hosted on GitHub Releases)
+releases/*/*.dmg
+*.dmg
+
+# Sparkle update signing keys (NEVER commit private key!)
+sparkle_eddsa_private.key
+**/*_eddsa_private.key
+
+# IDEs
+.vscode/
+.idea/
+
+# Builds (exclude from root, but allow in releases/)
+/*.exe
+dist/
+build/
+
+# PyInstaller spec files (keep the build spec)
+!windows/AIO-SSL-Tool-Windows.spec
+
+# Temporary files
+*.log
+*.tmp
+.pytest_cache/
+
+# Ignore new icon drafts only
+new-icon.*

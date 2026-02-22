@@ -1,0 +1,6 @@
+customtkinter
+cryptography
+requests
+Pillow
+wincertstore; platform_system=="Windows"
+

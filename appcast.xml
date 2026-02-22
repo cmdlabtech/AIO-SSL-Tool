@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>AIO SSL Tool Updates</title>
+        <link>https://github.com/cmdlabtech/AIO-SSL-Tool</link>
+        <description>Most recent updates to AIO SSL Tool</description>
+        <language>en</language>
+
+        <!-- Version 6.2.1 - Sandboxing Fix & Certificate Archive -->
+        <item>
+            <title>Version 6.2.1</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/V6.2.1</link>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>6.2.1</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.2.1</h2>
+                <ul>
+                    <li>Fixed sandboxing visual bug — app is now verified to run in macOS sandbox</li>
+                    <li>Added certificate archive feature — automatically save timestamped copies of generated files organized by domain</li>
+                    <li>General improvements</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sun, 22 Feb 2026 12:00:00 +0000</pubDate>
+            <enclosure
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.2.1/AIO-SSL-Tool-macOS-V6.2.1.dmg"
+                sparkle:version="11"
+                sparkle:shortVersionString="6.2.1"
+                length="1600000"
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+
+        <!-- Version 6.1.3 - CSR Fixes & IP SAN Support -->
+        <item>
+            <title>Version 6.1.3</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/V6.1.3</link>
+            <sparkle:version>10</sparkle:version>
+            <sparkle:shortVersionString>6.1.3</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.1.3</h2>
+                <ul>
+                    <li>Windows: Fix CSR Generator form view</li>
+                    <li>IP support for SANs for CSR generation</li>
+                </ul>
+            ]]></description>
+            <pubDate>Wed, 19 Feb 2026 12:00:00 +0000</pubDate>
+            <enclosure
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.1.3/AIO-SSL-Tool-macOS-V6.1.3.dmg"
+                sparkle:version="10"
+                sparkle:shortVersionString="6.1.3"
+                length="1576619"
+                type="application/octet-stream" />
+        </item>
+
+        <!-- Version 6.1.2 - Advanced PFX Options & UI Improvements -->
+        <item>
+            <title>Version 6.1.2</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/V6.1.2</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>6.1.2</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.1.2</h2>
+                <ul>
+                    <li>Advanced PFX Options with legacy crypto algorithm selection and caution warnings</li>
+                    <li>Quality of life improvements</li>
+                    <li>Unified cross-platform UI consistency</li>
+                    <li>Image aspect ratio fixes</li>
+                    <li>Enhanced build systems</li>
+                </ul>
+            ]]></description>
+            <pubDate>Wed, 19 Feb 2026 12:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.1.2/AIO-SSL-Tool-macOS-V6.1.2.dmg" 
+                sparkle:version="9" 
+                sparkle:shortVersionString="6.1.2"
+                length="1576619" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        
+        <!-- Version 6.1.0 - ECC Cryptography Support -->
+        <item>
+            <title>Version 6.1.0</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/v6.1.0</link>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>6.1.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.1.0</h2>
+                <ul>
+                    <li>Added ECC key generation (P-256, P-384, P-521 curves)</li>
+                    <li>RSA support maintained (2048/3072/4096 bits)</li>
+                    <li>SHA-256 signatures and RFC 5280 compliance</li>
+                    <li>Country code validation and optional email field</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sun, 16 Feb 2026 23:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/v6.1.0/AIOSSLTool-macOS-v6.1.0.dmg" 
+                sparkle:version="7" 
+                sparkle:shortVersionString="6.1.0"
+                length="2826770" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        
+        <!-- Version 6.0.4 - Latest Release with Auto-Update Fix -->
+        <item>
+            <title>Version 6.0.4</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/v6.0.4</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>6.0.4</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.0.4</h2>
+                <ul>
+                    <li>Fixed critical crash on launch</li>
+                    <li>Auto-update system now functional</li>
+                    <li>Check for Updates button working</li>
+                    <li>Background update checks enabled</li>
+                </ul>
+            ]]></description>
+            <pubDate>Fri, 14 Feb 2026 22:30:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/v6.0.4/AIOSSLTool-macOS-v6.0.4.dmg" 
+                sparkle:version="6" 
+                sparkle:shortVersionString="6.0.4"
+                length="2769651" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        
+        <!-- Version 6.0.3 - Test Release for Auto-Update -->
+        <item>
+            <title>Version 6.0.3</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/v6.0.3</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>6.0.3</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.0.3</h2>
+                <ul>
+                    <li>✨ Enabled Sparkle auto-update system</li>
+                    <li>🔔 Update notifications now working</li>
+                    <li>🔄 Automatic background update checks</li>
+                    <li>🐛 Bug fixes and improvements</li>
+                </ul>
+            ]]></description>
+            <pubDate>Fri, 14 Feb 2026 22:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/v6.0.3/AIOSSLTool-macOS-v6.0.3.dmg" 
+                sparkle:version="6" 
+                sparkle:shortVersionString="6.0.3"
+                length="1800000" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        
+        <!-- Version 6.0.2 - Latest Release -->
+        <item>
+            <title>Version 6.0.2</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/v6.0.2</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>6.0.2</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.0.2</h2>
+                <ul>
+                    <li>Bug fixes and stability improvements</li>
+                    <li>Enhanced certificate chain building</li>
+                    <li>Improved UI responsiveness</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 08 Feb 2026 18:14:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/v6.0.2/AIOSSLTool-macOS-v6.0.2.dmg" 
+                sparkle:version="6" 
+                sparkle:shortVersionString="6.0.2"
+                length="1708854" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        
+        <!-- Current version - Version 6.0.0 -->
+        <item>
+            <title>Version 6.0.0</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/v6.0.0</link>
+            <sparkle:version>6</sparkle:version>
+            <sparkle:shortVersionString>6.0.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.0.0</h2>
+                <ul>
+                    <li>Modern macOS native application</li>
+                    <li>Certificate chain building</li>
+                    <li>CSR generation</li>
+                    <li>PFX extraction capabilities</li>
+                </ul>
+            ]]></description>
+            <pubDate>Sat, 08 Feb 2026 00:00:00 +0000</pubDate>
+            <enclosure 
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/v6.0.0/AIOSSLTool-macOS-v6.0.0.dmg" 
+                sparkle:version="6" 
+                sparkle:shortVersionString="6.0.0"
+                length="1708854" 
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+    </channel>
+</rss>
