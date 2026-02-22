@@ -2,11 +2,8 @@ name: Build and Release
 
 on:
   push:
-    branches: [ "main", "master" ]
     tags:
       - 'V*'
-  pull_request:
-    branches: [ "main", "master" ]
 
 jobs:
   build-macos:

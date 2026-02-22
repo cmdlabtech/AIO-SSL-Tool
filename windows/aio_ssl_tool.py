@@ -638,13 +638,90 @@ class AIOSSLToolApp:
         ctk.CTkLabel(password_content, text="Password to protect the output PFX file", font=("Arial", 10), text_color="gray60").pack(anchor="w", pady=(0, 5))
         self.pfx_password_entry = ctk.CTkEntry(password_content, placeholder_text="Enter PFX password...", show="*", height=36)
         self.pfx_password_entry.pack(fill="x")
-        try:
-            if getattr(self, 'csr_placeholder_active', False):
-                self.csr_san_text.delete("1.0", "end")
-                self.csr_san_text.tag_remove("placeholder", "1.0", "end")
-                self.csr_placeholder_active = False
-        except Exception:
-            pass
+
+        # Advanced Options Section
+        advanced_frame = ctk.CTkFrame(scroll_frame, corner_radius=12, fg_color="#1a1a1a")
+        advanced_frame.pack(fill="x", pady=15)
+
+        advanced_header = ctk.CTkFrame(advanced_frame, fg_color="transparent")
+        advanced_header.pack(fill="x", padx=20, pady=(15, 0))
+
+        self.pfx_advanced_toggle = ctk.CTkCheckBox(
+            advanced_header,
+            text="Advanced Options",
+            command=self.toggle_pfx_advanced,
+            font=("Arial", 13, "bold"),
+            height=24
+        )
+        self.pfx_advanced_toggle.pack(anchor="w")
+
+        # Advanced options content (hidden by default)
+        self.pfx_advanced_content = ctk.CTkFrame(advanced_frame, fg_color="transparent")
+
+        adv_inner = ctk.CTkFrame(self.pfx_advanced_content, fg_color="transparent")
+        adv_inner.pack(fill="x", padx=20, pady=(10, 15))
+
+        # MAC Algorithm
+        mac_frame = ctk.CTkFrame(adv_inner, fg_color="transparent")
+        mac_frame.pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(mac_frame, text="MAC Algorithm", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 5))
+
+        mac_buttons_frame = ctk.CTkFrame(mac_frame, fg_color="transparent")
+        mac_buttons_frame.pack(fill="x")
+
+        self.pfx_mac_var = ctk.StringVar(value=self.pfx_mac_algorithm)
+        mac_algorithms = ["SHA-256", "SHA-512", "SHA-1"]
+        for algo in mac_algorithms:
+            btn = ctk.CTkRadioButton(
+                mac_buttons_frame, text=algo, variable=self.pfx_mac_var, value=algo,
+                command=lambda a=algo: self.set_pfx_mac_algorithm(a),
+                font=("Arial", 11)
+            )
+            btn.pack(side="left", padx=(0, 15))
+
+        # Encryption Algorithm
+        enc_frame = ctk.CTkFrame(adv_inner, fg_color="transparent")
+        enc_frame.pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(enc_frame, text="Encryption Algorithm", font=("Arial", 12, "bold")).pack(anchor="w", pady=(0, 5))
+
+        enc_buttons_frame = ctk.CTkFrame(enc_frame, fg_color="transparent")
+        enc_buttons_frame.pack(fill="x")
+
+        self.pfx_enc_var = ctk.StringVar(value=self.pfx_encryption_algorithm)
+        enc_algorithms = ["Default", "AES-256", "AES-128", "3DES", "Legacy"]
+        for algo in enc_algorithms:
+            btn = ctk.CTkRadioButton(
+                enc_buttons_frame, text=algo, variable=self.pfx_enc_var, value=algo,
+                command=lambda a=algo: self.set_pfx_encryption_algorithm(a),
+                font=("Arial", 11)
+            )
+            btn.pack(side="left", padx=(0, 15))
+
+        # Legacy warning label (hidden by default)
+        self.pfx_legacy_warning = ctk.CTkLabel(
+            adv_inner,
+            text="⚠ Using legacy options — these use weak cryptography and are not recommended for production use",
+            font=("Arial", 11),
+            text_color="#ff9800",
+            wraplength=500,
+            anchor="w"
+        )
+
+        # Generate PFX Button
+        generate_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
+        generate_frame.pack(fill="x", pady=15)
+
+        ctk.CTkButton(
+            generate_frame,
+            text="Generate PFX File",
+            command=self.create_pfx_advanced,
+            height=42,
+            font=("Arial", 14, "bold"),
+            fg_color="#1f538d",
+            hover_color="#163d6b"
+        ).pack(fill="x")
 
     def on_csr_san_focus_out(self, event):
         try:
