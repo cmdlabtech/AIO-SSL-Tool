@@ -32,6 +32,10 @@ sparkle_eddsa_private.key
 # Source icon files
 **/icon-source.png
 
+# Claude
+CLAUDE.md
+TODO.md
+
 # IDEs
 .vscode/
 .idea/

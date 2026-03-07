@@ -129,8 +129,9 @@ class SSLToolViewModel: ObservableObject {
                 // Build chain by fetching issuers from system keychain
                 var chain = certificates
                 var current = chain.last!
-                
-                while !CertificateUtils.isSelfSigned(current) {
+                let maxChainDepth = 15
+
+                while !CertificateUtils.isSelfSigned(current) && chain.count < maxChainDepth {
                     if let issuer = try? CertificateUtils.fetchIssuerFromKeychain(for: current) {
                         if !chain.contains(where: { CertificateUtils.certificatesMatch($0, issuer) }) {
                             chain.append(issuer)

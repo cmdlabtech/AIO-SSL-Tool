@@ -222,14 +222,18 @@ enum CertificateUtils {
         // Create OpenSSL config file for SANs
         let config = createOpenSSLConfig(details: details)
         try config.write(to: URL(fileURLWithPath: configPath), atomically: true, encoding: .utf8)
-        
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: configPath)
+
         // Generate private key and CSR using OpenSSL
         if details.keyType == .rsa {
             try generateRSAKeyAndCSR(details: details, keyPath: keyPath, csrPath: csrPath, configPath: configPath)
         } else {
             try generateECCKeyAndCSR(details: details, keyPath: keyPath, csrPath: csrPath, configPath: configPath)
         }
-        
+
+        // Set secure file permissions on generated key immediately after creation (0600)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: keyPath)
+
         // Read generated CSR and private key
         guard let csrData = try? Data(contentsOf: URL(fileURLWithPath: csrPath)),
               let csrPEM = String(data: csrData, encoding: .utf8) else {
@@ -239,7 +243,7 @@ enum CertificateUtils {
                 userInfo: [NSLocalizedDescriptionKey: "Failed to read generated CSR"]
             )
         }
-        
+
         guard let keyData = try? Data(contentsOf: URL(fileURLWithPath: keyPath)),
               var keyPEM = String(data: keyData, encoding: .utf8) else {
             throw NSError(
@@ -249,10 +253,6 @@ enum CertificateUtils {
             )
         }
         
-        // Set secure file permissions on generated keys (0600)
-        let keyURL = URL(fileURLWithPath: keyPath)
-        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: keyURL.path)
-        
         // Encrypt private key if password is provided
         if let password = details.keyPassword, !password.isEmpty {
             keyPEM = try encryptPrivateKey(keyPEM: keyPEM, password: password, keyType: details.keyType)
@@ -261,19 +261,36 @@ enum CertificateUtils {
         return (csrPEM, keyPEM)
     }
     
+    /// Escapes special characters in a DN field value per RFC 2253.
+    /// Prevents injection of extra DN components via crafted input.
+    private static func escapeDNValue(_ value: String) -> String {
+        // Escape backslash first, then forward slash (OpenSSL -subj field separator),
+        // then other special characters per RFC 2253: , + " < > ; and leading/trailing spaces
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "/", with: "\\/")
+            .replacingOccurrences(of: ",", with: "\\,")
+            .replacingOccurrences(of: "+", with: "\\+")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "<", with: "\\<")
+            .replacingOccurrences(of: ">", with: "\\>")
+            .replacingOccurrences(of: ";", with: "\\;")
+        return escaped
+    }
+
     private static func generateRSAKeyAndCSR(details: CSRDetails, keyPath: String, csrPath: String, configPath: String) throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/openssl")
-        
-        // Build subject DN
+
+        // Build subject DN (values escaped to prevent injection via RFC 2253 special chars)
         var subject = ""
-        if !details.country.isEmpty { subject += "/C=\(details.country)" }
-        if !details.state.isEmpty { subject += "/ST=\(details.state)" }
-        if !details.locality.isEmpty { subject += "/L=\(details.locality)" }
-        if !details.organization.isEmpty { subject += "/O=\(details.organization)" }
-        if !details.organizationalUnit.isEmpty { subject += "/OU=\(details.organizationalUnit)" }
-        if !details.commonName.isEmpty { subject += "/CN=\(details.commonName)" }
-        if !details.email.isEmpty { subject += "/emailAddress=\(details.email)" }
+        if !details.country.isEmpty { subject += "/C=\(escapeDNValue(details.country))" }
+        if !details.state.isEmpty { subject += "/ST=\(escapeDNValue(details.state))" }
+        if !details.locality.isEmpty { subject += "/L=\(escapeDNValue(details.locality))" }
+        if !details.organization.isEmpty { subject += "/O=\(escapeDNValue(details.organization))" }
+        if !details.organizationalUnit.isEmpty { subject += "/OU=\(escapeDNValue(details.organizationalUnit))" }
+        if !details.commonName.isEmpty { subject += "/CN=\(escapeDNValue(details.commonName))" }
+        if !details.email.isEmpty { subject += "/emailAddress=\(escapeDNValue(details.email))" }
         
         var arguments = [
             "req",
@@ -363,16 +380,16 @@ enum CertificateUtils {
         // Now generate the CSR using the ECC key
         let csrProcess = Process()
         csrProcess.executableURL = URL(fileURLWithPath: "/usr/bin/openssl")
-        
-        // Build subject DN
+
+        // Build subject DN (values escaped to prevent injection via RFC 2253 special chars)
         var subject = ""
-        if !details.country.isEmpty { subject += "/C=\(details.country)" }
-        if !details.state.isEmpty { subject += "/ST=\(details.state)" }
-        if !details.locality.isEmpty { subject += "/L=\(details.locality)" }
-        if !details.organization.isEmpty { subject += "/O=\(details.organization)" }
-        if !details.organizationalUnit.isEmpty { subject += "/OU=\(details.organizationalUnit)" }
-        if !details.commonName.isEmpty { subject += "/CN=\(details.commonName)" }
-        if !details.email.isEmpty { subject += "/emailAddress=\(details.email)" }
+        if !details.country.isEmpty { subject += "/C=\(escapeDNValue(details.country))" }
+        if !details.state.isEmpty { subject += "/ST=\(escapeDNValue(details.state))" }
+        if !details.locality.isEmpty { subject += "/L=\(escapeDNValue(details.locality))" }
+        if !details.organization.isEmpty { subject += "/O=\(escapeDNValue(details.organization))" }
+        if !details.organizationalUnit.isEmpty { subject += "/OU=\(escapeDNValue(details.organizationalUnit))" }
+        if !details.commonName.isEmpty { subject += "/CN=\(escapeDNValue(details.commonName))" }
+        if !details.email.isEmpty { subject += "/emailAddress=\(escapeDNValue(details.email))" }
         
         var arguments = [
             "req",
@@ -477,26 +494,33 @@ enum CertificateUtils {
         let uuid = UUID().uuidString
         let unencryptedKeyPath = (tempDir as NSString).appendingPathComponent("temp_\(uuid)_unenc.key")
         let encryptedKeyPath = (tempDir as NSString).appendingPathComponent("temp_\(uuid)_enc.key")
-        
+        let passFilePath = (tempDir as NSString).appendingPathComponent("temp_\(uuid)_pass.txt")
+
         defer {
             try? FileManager.default.removeItem(atPath: unencryptedKeyPath)
             try? FileManager.default.removeItem(atPath: encryptedKeyPath)
+            try? FileManager.default.removeItem(atPath: passFilePath)
         }
-        
-        // Write unencrypted key to temp file
+
+        // Write unencrypted key to temp file with secure permissions
         try keyPEM.write(to: URL(fileURLWithPath: unencryptedKeyPath), atomically: true, encoding: .utf8)
-        
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: unencryptedKeyPath)
+
+        // Write password to temp file (avoids exposing it in process arguments)
+        try password.write(to: URL(fileURLWithPath: passFilePath), atomically: true, encoding: .utf8)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: passFilePath)
+
         // Encrypt using OpenSSL
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/openssl")
-        
+
         let algorithm = keyType == .rsa ? "rsa" : "ec"
         process.arguments = [
             algorithm,
             "-in", unencryptedKeyPath,
             "-out", encryptedKeyPath,
             "-aes256",
-            "-passout", "pass:\(password)"
+            "-passout", "file:\(passFilePath)"
         ]
         
         let errorPipe = Pipe()
@@ -538,43 +562,6 @@ enum CertificateUtils {
         }
     }
     
-    private static func generatePrivateKeyPEM(_ keyData: Data, password: String?) -> String {
-        let base64 = keyData.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
-        
-        // Note: For encrypted keys, you'd need to implement PKCS#8 encryption
-        // For simplicity, we're creating unencrypted keys here
-        // In production, consider using OpenSSL or CryptoKit for proper encryption
-        
-        return "-----BEGIN RSA PRIVATE KEY-----\n\(base64)\n-----END RSA PRIVATE KEY-----"
-    }
-    
-    private static func createCSRPEM(details: CSRDetails, publicKey: SecKey, privateKey: SecKey) throws -> String {
-        // Build subject DN
-        var subjectComponents: [String] = []
-        if !details.country.isEmpty { subjectComponents.append("C=\(details.country)") }
-        if !details.state.isEmpty { subjectComponents.append("ST=\(details.state)") }
-        if !details.locality.isEmpty { subjectComponents.append("L=\(details.locality)") }
-        if !details.organization.isEmpty { subjectComponents.append("O=\(details.organization)") }
-        if !details.organizationalUnit.isEmpty { subjectComponents.append("OU=\(details.organizationalUnit)") }
-        if !details.commonName.isEmpty { subjectComponents.append("CN=\(details.commonName)") }
-        
-        let subject = subjectComponents.joined(separator: ", ")
-        
-        // For a full implementation, you'd need to construct the CSR using ASN.1 encoding
-        // This is a simplified version - in production, use a proper crypto library
-        let csrContent = """
-        Certificate Request:
-            Subject: \(subject)
-            Public Key Algorithm: RSA
-            Key Size: \(details.keySize)
-        """
-        
-        let csrData = csrContent.data(using: .utf8) ?? Data()
-        let base64 = csrData.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
-        
-        return "-----BEGIN CERTIFICATE REQUEST-----\n\(base64)\n-----END CERTIFICATE REQUEST-----"
-    }
-    
     // MARK: - PFX Operations
     
     static func createPFX(certificates: [Certificate], privateKeyData: Data, keyPassword: String?, pfxPassword: String, options: PFXOptions = PFXOptions()) throws -> Data {
@@ -598,12 +585,15 @@ enum CertificateUtils {
         // Write certificate chain to file
         let chainPEM = certificates.map { $0.pemRepresentation }.joined(separator: "\n")
         try chainPEM.write(to: URL(fileURLWithPath: certPath), atomically: true, encoding: .utf8)
-        
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: certPath)
+
         // Write private key to file
         try privateKeyData.write(to: URL(fileURLWithPath: keyPath))
-        
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: keyPath)
+
         // Write PFX password to file
         try pfxPassword.write(to: URL(fileURLWithPath: pfxPassFilePath), atomically: true, encoding: .utf8)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: pfxPassFilePath)
         
         // Build OpenSSL command
         let process = Process()
@@ -767,98 +757,4 @@ enum CertificateUtils {
         }
     }
     
-    private static func extractPrivateKeyDirect(pfxData: Data, password: String) throws -> String {
-        // Direct extraction without temporary keychain
-        var items: CFArray?
-        let importOptions = [kSecImportExportPassphrase as String: password] as CFDictionary
-        
-        let status = SecPKCS12Import(pfxData as CFData, importOptions, &items)
-        
-        guard status == errSecSuccess else {
-            if status == errSecAuthFailed {
-                throw NSError(
-                    domain: NSOSStatusErrorDomain,
-                    code: Int(status),
-                    userInfo: [NSLocalizedDescriptionKey: "Incorrect password for PFX file."]
-                )
-            } else {
-                throw NSError(
-                    domain: NSOSStatusErrorDomain,
-                    code: Int(status),
-                    userInfo: [NSLocalizedDescriptionKey: "Failed to import PFX file. Status: \(status)"]
-                )
-            }
-        }
-        
-        guard let itemsArray = items as? [[String: Any]],
-              let firstItem = itemsArray.first,
-              let identityRef = firstItem[kSecImportItemIdentity as String] else {
-            throw NSError(
-                domain: NSOSStatusErrorDomain,
-                code: Int(errSecInvalidKeyAttributeMask),
-                userInfo: [NSLocalizedDescriptionKey: "No identity found in PFX file."]
-            )
-        }
-        
-        let identity = identityRef as! SecIdentity
-        
-        // Extract the private key from identity
-        var privateKey: SecKey?
-        let keyStatus = SecIdentityCopyPrivateKey(identity, &privateKey)
-        
-        guard keyStatus == errSecSuccess, let key = privateKey else {
-            throw NSError(
-                domain: NSOSStatusErrorDomain,
-                code: Int(keyStatus),
-                userInfo: [NSLocalizedDescriptionKey: "Failed to extract private key from identity."]
-            )
-        }
-        
-        // Try direct export
-        var error: Unmanaged<CFError>?
-        guard let keyData = SecKeyCopyExternalRepresentation(key, &error) as Data? else {
-            let errorDescription = error?.takeRetainedValue().localizedDescription ?? "Unknown error"
-            throw NSError(
-                domain: NSOSStatusErrorDomain,
-                code: Int(errSecInvalidKeyAttributeMask),
-                userInfo: [NSLocalizedDescriptionKey: "Unable to export private key: \(errorDescription). The key may have non-exportable attributes."]
-            )
-        }
-        
-        // Determine key type
-        let keyAttributes = SecKeyCopyAttributes(key) as? [String: Any]
-        let keyType = keyAttributes?[kSecAttrKeyType as String] as? String
-        
-        let base64 = keyData.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
-        
-        if keyType as CFString? == kSecAttrKeyTypeRSA {
-            return "-----BEGIN RSA PRIVATE KEY-----\n\(base64)\n-----END RSA PRIVATE KEY-----"
-        } else if keyType as CFString? == kSecAttrKeyTypeEC || keyType as CFString? == kSecAttrKeyTypeECSECPrimeRandom {
-            return "-----BEGIN EC PRIVATE KEY-----\n\(base64)\n-----END EC PRIVATE KEY-----"
-        } else {
-            return "-----BEGIN PRIVATE KEY-----\n\(base64)\n-----END PRIVATE KEY-----"
-        }
-    }
-    
-    private static func extractPrivateKeyData(from pem: String) -> Data? {
-        let pattern = "-----BEGIN.*?PRIVATE KEY-----([^-]+)-----END.*?PRIVATE KEY-----"
-        
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators]) else {
-            return nil
-        }
-        
-        let range = NSRange(pem.startIndex..., in: pem)
-        guard let match = regex.firstMatch(in: pem, range: range),
-              match.numberOfRanges >= 2,
-              let base64Range = Range(match.range(at: 1), in: pem) else {
-            return nil
-        }
-        
-        let base64String = String(pem[base64Range])
-            .replacingOccurrences(of: "\n", with: "")
-            .replacingOccurrences(of: "\r", with: "")
-            .replacingOccurrences(of: " ", with: "")
-        
-        return Data(base64Encoded: base64String)
-    }
 }

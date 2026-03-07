@@ -28,7 +28,6 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.x509.oid import NameOID
-import requests
 import platform
 import threading
 import ipaddress
@@ -709,6 +708,17 @@ class AIOSSLToolApp:
             anchor="w"
         )
 
+        # Note: Windows uses cryptography library defaults
+        ctk.CTkLabel(
+            adv_inner,
+            text="ℹ Note: On Windows, PFX files are created using the cryptography library's secure defaults. "
+                 "These selections are shown for reference only and do not affect the output.",
+            font=("Arial", 10),
+            text_color="gray60",
+            wraplength=500,
+            anchor="w"
+        ).pack(anchor="w", pady=(8, 0))
+
         # Generate PFX Button
         generate_frame = ctk.CTkFrame(scroll_frame, fg_color="transparent")
         generate_frame.pack(fill="x", pady=15)
@@ -723,17 +733,6 @@ class AIOSSLToolApp:
             hover_color="#163d6b"
         ).pack(fill="x")
 
-    def on_csr_san_focus_out(self, event):
-        try:
-            content = self.csr_san_text.get("1.0", "end").strip()
-            if not content:
-                self.csr_san_text.insert("1.0", self.csr_placeholder_text)
-                self.csr_san_text.tag_add("placeholder", "1.0", "end")
-                self.csr_placeholder_active = True
-        except Exception:
-            pass
-        # end of CSR SAN focus-out handler
-    
     def show_extract_view(self):
         """Display Extract Private Key from PFX view"""
         header = ctk.CTkFrame(self.content_area, fg_color="#1a1a1a", corner_radius=0)
@@ -817,11 +816,11 @@ Keep this file secure and never share it."""
                 
                 icon_image = ctk.CTkImage(img, size=(display_width, display_height))
                 ctk.CTkLabel(icon_frame, image=icon_image, text="").pack(pady=(0, 15))
-        except:
+        except Exception:
             pass
         
         ctk.CTkLabel(icon_frame, text="AIO SSL Suite", font=("Arial", 20, "bold")).pack()
-        ctk.CTkLabel(icon_frame, text="Version V6.2.1", font=("Arial", 12), text_color="gray70").pack(pady=5)
+        ctk.CTkLabel(icon_frame, text="Version V6.2.2", font=("Arial", 12), text_color="gray70").pack(pady=5)
         
         # About Section
         about_frame = ctk.CTkFrame(scroll_frame, corner_radius=12, fg_color="#1a1a1a")
@@ -1096,7 +1095,22 @@ Keep this file secure and never share it."""
             if save_path:
                 with open(save_path, 'wb') as f:
                     f.write(pem_key)
-                
+
+                # Set secure file permissions on extracted key
+                if platform.system() == 'Windows':
+                    try:
+                        import subprocess
+                        username = os.environ.get('USERNAME', '')
+                        if username:
+                            subprocess.run(
+                                ['icacls', save_path, '/inheritance:r', '/grant:r', f'{username}:(F)'],
+                                check=False, capture_output=True
+                            )
+                    except Exception:
+                        pass
+                else:
+                    os.chmod(save_path, 0o600)
+
                 messagebox.showinfo("Success", f"Private key extracted successfully to:\n{save_path}")
                 
                 # Clear form
@@ -1209,8 +1223,19 @@ Keep this file secure and never share it."""
             with open(priv_path, "wb") as f:
                 f.write(key.private_bytes(serialization.Encoding.PEM, key_format, enc))
             
-            # Set secure file permissions on private key (Unix-like systems)
-            if platform.system() != 'Windows':
+            # Set secure file permissions on private key
+            if platform.system() == 'Windows':
+                try:
+                    import subprocess
+                    username = os.environ.get('USERNAME', '')
+                    if username:
+                        subprocess.run(
+                            ['icacls', priv_path, '/inheritance:r', '/grant:r', f'{username}:(F)'],
+                            check=False, capture_output=True
+                        )
+                except Exception:
+                    pass
+            else:
                 os.chmod(priv_path, 0o600)
             
             with open(csr_path, "wb") as f:
@@ -1480,71 +1505,6 @@ Keep this file secure and never share it."""
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create PFX:\n{str(e)}")
     
-    def create_pfx(self):
-        """Create PFX file from certificate chain and private key"""
-        key_file = self.pfx_key_entry.get().strip()
-        key_password = self.pfx_key_password_entry.get()
-        pfx_password = self.pfx_password_entry.get()
-        
-        if not key_file:
-            messagebox.showerror("Error", "Please select a private key file")
-            return
-        
-        if not pfx_password:
-            messagebox.showerror("Error", "Please enter a password for the PFX file")
-            return
-        
-        fullchain_path = os.path.join(self.save_directory, "FullChain.cer")
-        if not os.path.exists(fullchain_path):
-            messagebox.showerror("Error", "FullChain.cer not found. Please build the chain first.")
-            return
-        
-        try:
-            # Load private key
-            pwd = key_password.encode() if key_password else None
-            with open(key_file, "rb") as f:
-                key = serialization.load_pem_private_key(f.read(), password=pwd, backend=default_backend())
-            
-            # Load certificate chain
-            with open(fullchain_path, "rb") as f:
-                chain_data = f.read()
-            certs = self.load_certificates_from_pem(chain_data)
-            
-            if not certs:
-                raise ValueError("No certificates found in FullChain.cer")
-            
-            leaf = certs[0]
-            intermediates = certs[1:] if len(certs) > 1 else None
-            
-            # Create PFX
-            pfx = pkcs12.serialize_key_and_certificates(
-                name=b"certificate",
-                key=key,
-                cert=leaf,
-                cas=intermediates,
-                encryption_algorithm=serialization.BestAvailableEncryption(pfx_password.encode())
-            )
-            
-            # Save PFX
-            pfx_path = os.path.join(self.save_directory, "FullChain-pfx.pfx")
-            with open(pfx_path, "wb") as f:
-                f.write(pfx)
-            
-            messagebox.showinfo("Success", f"PFX file created successfully:\n{pfx_path}")
-            
-            # Archive if enabled
-            try:
-                cn = leaf.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value
-            except Exception:
-                cn = None
-            self.archive_files([pfx_path], domain=cn)
-            
-            # Clear password fields
-            self.pfx_key_password_entry.delete(0, "end")
-            self.pfx_password_entry.delete(0, "end")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"PFX creation failed:\n{str(e)}")
     def load_certificates_from_pem(self, data):
         certs = []
         for block in data.split(b'-----END CERTIFICATE-----'):
@@ -1552,7 +1512,7 @@ Keep this file secure and never share it."""
                 block += b'-----END CERTIFICATE-----\n'
                 try:
                     certs.append(x509.load_pem_x509_certificate(block, default_backend()))
-                except:
+                except Exception:
                     pass
         return certs
     def is_self_signed(self, cert):
@@ -1566,7 +1526,7 @@ Keep this file secure and never share it."""
                 child.signature_hash_algorithm
             )
             return True
-        except:
+        except Exception:
             return False
     def load_windows_trusted_roots(self):
         certs = []
@@ -1578,9 +1538,9 @@ Keep this file secure and never share it."""
                             try:
                                 c = x509.load_pem_x509_certificate(wc.get_pem(), default_backend())
                                 certs.append(c)
-                            except:
+                            except Exception:
                                 continue
-                except:
+                except Exception:
                     pass
         return certs
     def fetch_issuer_from_windows(self, cert):
@@ -1594,9 +1554,9 @@ Keep this file secure and never share it."""
                             issuer = x509.load_pem_x509_certificate(wc.get_pem(), default_backend())
                             if issuer.subject == cert.issuer and self.verify_signature(cert, issuer):
                                 return issuer
-                        except:
+                        except Exception:
                             continue
-            except:
+            except Exception:
                 pass
         return None
 
