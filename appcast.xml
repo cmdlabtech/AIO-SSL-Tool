@@ -6,6 +6,32 @@
         <description>Most recent updates to AIO SSL Tool</description>
         <language>en</language>
 
+        <!-- Version 6.3.0 - ClearPass Certificate Management -->
+        <item>
+            <title>Version 6.3.0</title>
+            <link>https://github.com/cmdlabtech/AIO-SSL-Tool/releases/tag/V6.3.0</link>
+            <sparkle:version>13</sparkle:version>
+            <sparkle:shortVersionString>6.3.0</sparkle:shortVersionString>
+            <description><![CDATA[
+                <h2>What's New in 6.3.0</h2>
+                <ul>
+                    <li>New: ClearPass tab — upload and replace certificates on Aruba ClearPass via REST API</li>
+                    <li>ClearPass: Connect & Discover Servers merged into a single section for cleaner workflow</li>
+                    <li>ClearPass: Network interface picker to select the correct NIC for serving PFX files to ClearPass</li>
+                    <li>ClearPass: Current Certificates view with expiry colour-coding per server</li>
+                    <li>ClearPass: Self-test diagnostic confirms HTTP file server is reachable before uploading</li>
+                </ul>
+            ]]></description>
+            <pubDate>Mon, 10 Mar 2026 12:00:00 +0000</pubDate>
+            <enclosure
+                url="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.0/AIO-SSL-Tool-macOS-V6.3.0.dmg"
+                sparkle:version="13"
+                sparkle:shortVersionString="6.3.0"
+                length="1600000"
+                type="application/octet-stream" />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+
         <!-- Version 6.2.2 - Security Fixes & Bug Fixes -->
         <item>
             <title>Version 6.2.2</title>

@@ -132,7 +132,20 @@ struct CSRGenerationView: View {
             Text(viewModel.errorMessage)
         }
         .alert("Success", isPresented: $viewModel.showingSuccess) {
-            Button("OK") { }
+            Button("OK") {
+                commonName = ""
+                country = ""
+                state = ""
+                locality = ""
+                organization = ""
+                organizationalUnit = ""
+                email = ""
+                sansText = ""
+                keyType = .rsa
+                keySize = "2048"
+                eccCurve = .prime256v1
+                keyPassword = ""
+            }
         } message: {
             Text(viewModel.successMessage)
         }

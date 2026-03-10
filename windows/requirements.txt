@@ -1,5 +1,6 @@
 customtkinter
 cryptography
 Pillow
+requests
 wincertstore; platform_system=="Windows"
 

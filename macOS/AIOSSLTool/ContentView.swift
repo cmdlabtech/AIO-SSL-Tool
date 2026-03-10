@@ -13,18 +13,22 @@ struct ContentView: View {
         case home = "Home"
         case csrGenerator = "CSR Generator"
         case chainBuilder = "Chain Builder"
+        case privateCAChain = "Private CA Chain"
         case pfxGenerator = "PFX Generator"
         case keyExtractor = "Key Extractor"
+        case clearPass = "ClearPass"
         case settings = "Settings"
-        
+
         var id: String { rawValue }
         var icon: String {
             switch self {
             case .home: return "house.fill"
             case .csrGenerator: return "doc.badge.plus"
             case .chainBuilder: return "link.circle.fill"
+            case .privateCAChain: return "rectangle.stack.badge.plus"
             case .pfxGenerator: return "shippingbox.fill"
             case .keyExtractor: return "key.fill"
+            case .clearPass: return "wifi.circle.fill"
             case .settings: return "gearshape.fill"
             }
         }
@@ -52,10 +56,14 @@ struct ContentView: View {
                         CSRGenerationView(viewModel: viewModel)
                     case .chainBuilder:
                         ChainBuilderView(viewModel: viewModel)
+                    case .privateCAChain:
+                        PrivateCAChainView(viewModel: viewModel)
                     case .pfxGenerator:
                         PFXGeneratorView(viewModel: viewModel)
                     case .keyExtractor:
                         ExtractPFXView(viewModel: viewModel)
+                    case .clearPass:
+                        ClearPassView(viewModel: viewModel)
                     case .settings:
                         SettingsView()
                     }
