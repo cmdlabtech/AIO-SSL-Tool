@@ -32,6 +32,8 @@ import platform
 import threading
 import ipaddress
 import queue
+import http.client
+import ssl as _ssl
 
 def resource_path(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -945,6 +947,13 @@ Keep this file secure and never share it."""
 
     def show_clearpass_view(self):
         """Display ClearPass REST API certificate upload view."""
+        # Suppress SSL warnings
+        try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        except Exception:
+            pass
+
         # Header
         header = ctk.CTkFrame(self.content_area, fg_color="#1a1a1a", corner_radius=0)
         header.pack(fill="x")
@@ -957,20 +966,25 @@ Keep this file secure and never share it."""
         scroll = ctk.CTkScrollableFrame(self.content_area, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=30, pady=20)
 
-        # Initialize state
+        # Initialize persistent state (only on first load)
         if not hasattr(self, 'cp_access_token'):
             self.cp_access_token = None
         if not hasattr(self, 'cp_servers'):
             self.cp_servers = []
         if not hasattr(self, 'cp_pfx_path'):
             self.cp_pfx_path = None
+        if not hasattr(self, 'cp_saved_host'):
+            self.cp_saved_host = ""
+        if not hasattr(self, 'cp_saved_client_id'):
+            self.cp_saved_client_id = ""
+        if not hasattr(self, 'cp_verify_ssl_var'):
+            self.cp_verify_ssl_var = ctk.BooleanVar(value=True)
+        if not hasattr(self, 'cp_service_var'):
+            self.cp_service_var = ctk.StringVar(value="HTTPS(RSA)")
+        if not hasattr(self, 'cp_inspect_service_var'):
+            self.cp_inspect_service_var = ctk.StringVar(value="HTTPS(RSA)")
 
-        # --- Connection Card ---
-        conn_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
-        conn_card.pack(fill="x", pady=(0, 12))
-        cc = ctk.CTkFrame(conn_card, fg_color="transparent")
-        cc.pack(fill="x", padx=20, pady=16)
-        ctk.CTkLabel(cc, text="Connection", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 10))
+        _services = ["HTTPS(RSA)", "HTTP(ECC)", "RADIUS", "RadSec", "Database"]
 
         def lrow(parent, label, widget_factory):
             r = ctk.CTkFrame(parent, fg_color="transparent")
@@ -980,23 +994,51 @@ Keep this file secure and never share it."""
             w.pack(side="left", fill="x", expand=True)
             return w
 
+        # --- Connection & Target Servers Card ---
+        conn_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
+        conn_card.pack(fill="x", pady=(0, 12))
+        cc = ctk.CTkFrame(conn_card, fg_color="transparent")
+        cc.pack(fill="x", padx=20, pady=16)
+        ctk.CTkLabel(cc, text="Connection & Target Servers", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 10))
+
         self.cp_host_entry = lrow(cc, "ClearPass Host:", lambda p: ctk.CTkEntry(p, placeholder_text="clearpass.example.com or IP", height=36))
+        if self.cp_saved_host:
+            self.cp_host_entry.insert(0, self.cp_saved_host)
         self.cp_client_id_entry = lrow(cc, "API Client ID:", lambda p: ctk.CTkEntry(p, placeholder_text="API client ID", height=36))
+        if self.cp_saved_client_id:
+            self.cp_client_id_entry.insert(0, self.cp_saved_client_id)
         self.cp_client_secret_entry = lrow(cc, "Client Secret:", lambda p: ctk.CTkEntry(p, placeholder_text="API client secret", show="*", height=36))
 
         ssl_row = ctk.CTkFrame(cc, fg_color="transparent")
         ssl_row.pack(fill="x", pady=(6, 0))
-        self.cp_verify_ssl_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(ssl_row, text="Verify SSL Certificate", variable=self.cp_verify_ssl_var).pack(side="left")
 
-        self.cp_conn_status_label = ctk.CTkLabel(cc, text="", font=("Arial", 11), text_color="gray70")
-        self.cp_conn_status_label.pack(anchor="w", pady=(6, 0))
-
+        # Status label + connect button row
+        status_btn_row = ctk.CTkFrame(cc, fg_color="transparent")
+        status_btn_row.pack(fill="x", pady=(8, 0))
+        self.cp_conn_status_label = ctk.CTkLabel(status_btn_row, text="", font=("Arial", 11), text_color="gray70")
+        self.cp_conn_status_label.pack(side="left")
+        if self.cp_access_token:
+            self.cp_conn_status_label.configure(
+                text=f"● Connected — {len(self.cp_servers)} server(s) found", text_color="#44cc44")
         ctk.CTkButton(
-            cc, text="Connect & Discover Servers",
+            status_btn_row, text="Connect & Discover Servers",
             command=self._cp_connect,
             height=38, font=("Arial", 13, "bold")
-        ).pack(anchor="e", pady=(10, 0))
+        ).pack(side="right")
+
+        # Debug log (shown during connect for troubleshooting)
+        self.cp_debug_frame = ctk.CTkFrame(cc, fg_color="transparent")
+        self.cp_debug_text = ctk.CTkTextbox(self.cp_debug_frame, height=90, font=("Courier", 10),
+                                            wrap="word", fg_color="#111111", text_color="#aaffaa")
+        self.cp_debug_text.pack(fill="x")
+
+        # Server list (inline, shown after connect)
+        self.cp_server_list_frame = ctk.CTkFrame(cc, fg_color="transparent")
+        self.cp_server_list_frame.pack(fill="x", pady=(4, 0))
+        self.cp_server_vars = {}
+        if self.cp_servers:
+            self._cp_render_servers()
 
         # --- Certificate Card ---
         cert_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
@@ -1019,57 +1061,55 @@ Keep this file secure and never share it."""
         svc_row = ctk.CTkFrame(cert_c, fg_color="transparent")
         svc_row.pack(fill="x", pady=3)
         ctk.CTkLabel(svc_row, text="Service:", width=170, anchor="w").pack(side="left", padx=(0, 8))
-        self.cp_service_var = ctk.StringVar(value="HTTPS")
-        svc_combo = ctk.CTkComboBox(svc_row, values=["HTTPS", "HTTPS(ECC)", "RADIUS", "RadSec"],
-                                    variable=self.cp_service_var, width=160)
-        svc_combo.pack(side="left")
+        ctk.CTkComboBox(svc_row, values=_services, variable=self.cp_service_var, width=200).pack(side="left")
 
-        # --- Servers Card ---
-        srv_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
-        srv_card.pack(fill="x", pady=(0, 12))
-        srv_c = ctk.CTkFrame(srv_card, fg_color="transparent")
-        srv_c.pack(fill="x", padx=20, pady=16)
-        ctk.CTkLabel(srv_c, text="Target Servers", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 8))
+        # Upload interface picker
+        iface_row = ctk.CTkFrame(cert_c, fg_color="transparent")
+        iface_row.pack(fill="x", pady=3)
+        ctk.CTkLabel(iface_row, text="Upload Interface:", width=170, anchor="w").pack(side="left", padx=(0, 8))
+        ifaces = self._cp_get_local_ips()
+        self._cp_ifaces = ifaces
+        if ifaces:
+            iface_labels = [f"{n} — {ip}" for n, ip in ifaces]
+            self.cp_iface_combo = ctk.CTkComboBox(iface_row, values=iface_labels, width=280, state="readonly")
+            self.cp_iface_combo.set(iface_labels[0])
+            self.cp_iface_combo.pack(side="left", padx=(0, 8))
+        else:
+            ctk.CTkLabel(iface_row, text="No interfaces detected", text_color="gray60").pack(side="left")
 
-        self.cp_server_frame = ctk.CTkFrame(srv_c, fg_color="transparent")
-        self.cp_server_frame.pack(fill="x")
-        self.cp_server_vars = {}
-        self._cp_render_servers()
+        # --- Current Certificates Card ---
+        insp_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
+        insp_card.pack(fill="x", pady=(0, 12))
+        insp_c = ctk.CTkFrame(insp_card, fg_color="transparent")
+        insp_c.pack(fill="x", padx=20, pady=16)
+        ctk.CTkLabel(insp_c, text="Current Certificates", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 8))
 
-        # --- Current Certificates ---
-        cert_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
-        cert_card.pack(fill="x", pady=(0, 12))
-        cert_c = ctk.CTkFrame(cert_card, fg_color="transparent")
-        cert_c.pack(fill="x", padx=20, pady=16)
-        ctk.CTkLabel(cert_c, text="Current Certificates", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 8))
-
-        inspect_row = ctk.CTkFrame(cert_c, fg_color="transparent")
+        inspect_row = ctk.CTkFrame(insp_c, fg_color="transparent")
         inspect_row.pack(fill="x", pady=(0, 6))
         ctk.CTkLabel(inspect_row, text="Service:", width=60, anchor="w").pack(side="left", padx=(0, 8))
-        if not hasattr(self, 'cp_inspect_service_var'):
-            self.cp_inspect_service_var = ctk.StringVar(value="HTTPS(RSA)")
-        ctk.CTkComboBox(inspect_row, values=["HTTPS(RSA)", "HTTP(ECC)", "RADIUS", "IaaSec", "Database"],
-                        variable=self.cp_inspect_service_var, width=160).pack(side="left", padx=(0, 12))
+        ctk.CTkComboBox(inspect_row, values=_services,
+                        variable=self.cp_inspect_service_var, width=180).pack(side="left", padx=(0, 12))
         ctk.CTkButton(inspect_row, text="Fetch", command=self._cp_fetch_certs,
                       height=32, width=90).pack(side="left")
-        ctk.CTkLabel(cert_c, text="Inspect and export the certificate currently installed on each server.",
+        ctk.CTkLabel(insp_c,
+                     text="Inspect the certificate currently installed on each server for the selected service.",
                      font=("Arial", 10), text_color="gray60").pack(anchor="w", pady=(0, 8))
 
-        self.cp_cert_display_frame = ctk.CTkFrame(cert_c, fg_color="transparent")
+        self.cp_cert_display_frame = ctk.CTkFrame(insp_c, fg_color="transparent")
         self.cp_cert_display_frame.pack(fill="x")
         if hasattr(self, 'cp_current_certs') and self.cp_current_certs:
             self._cp_render_current_certs()
 
         # --- Upload Results ---
-        self.cp_results_frame = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
         if hasattr(self, 'cp_upload_results') and self.cp_upload_results:
-            self.cp_results_frame.pack(fill="x", pady=(0, 12))
-            rc = ctk.CTkFrame(self.cp_results_frame, fg_color="transparent")
+            res_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#1a1a1a")
+            res_card.pack(fill="x", pady=(0, 12))
+            rc = ctk.CTkFrame(res_card, fg_color="transparent")
             rc.pack(fill="x", padx=20, pady=16)
             ctk.CTkLabel(rc, text="Upload Results", font=("Arial", 16, "bold")).pack(anchor="w", pady=(0, 8))
             for line in self.cp_upload_results:
-                ctk.CTkLabel(rc, text=line, font=("Arial", 11), anchor="w",
-                             text_color="#44cc44" if line.startswith("✓") else "#ee4444").pack(anchor="w")
+                color = "#44cc44" if line.startswith("✓") else ("#ddaa00" if line.startswith("⚠") else "#ee4444")
+                ctk.CTkLabel(rc, text=line, font=("Arial", 11), anchor="w", text_color=color).pack(anchor="w")
 
         # --- Upload Button ---
         ctk.CTkButton(
@@ -1078,17 +1118,79 @@ Keep this file secure and never share it."""
             height=44, font=("Arial", 14, "bold")
         ).pack(fill="x", pady=4)
 
+    def _cp_get_local_ips(self):
+        """Return list of (interface_name, ip) for non-loopback IPv4 addresses."""
+        import socket
+        results = []
+        seen = set()
+        # Try psutil for proper interface names
+        try:
+            import psutil
+            for iface, addrs in psutil.net_if_addrs().items():
+                for addr in addrs:
+                    if addr.family == socket.AF_INET and not addr.address.startswith("127.") and addr.address not in seen:
+                        results.append((iface, addr.address))
+                        seen.add(addr.address)
+            if results:
+                return results
+        except ImportError:
+            pass
+        # Fallback: hostname resolution
+        try:
+            for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+                ip = info[4][0]
+                if not ip.startswith("127.") and ip not in seen:
+                    results.append(("eth", ip))
+                    seen.add(ip)
+        except Exception:
+            pass
+        # Fallback: UDP routing trick
+        for dest in ["8.8.8.8", "1.1.1.1"]:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect((dest, 80))
+                ip = s.getsockname()[0]
+                s.close()
+                if not ip.startswith("127.") and ip not in seen:
+                    results.append(("eth", ip))
+                    seen.add(ip)
+            except Exception:
+                pass
+        return results
+
+    def _cp_selected_ip(self):
+        """Return the IP chosen in the interface picker."""
+        if hasattr(self, 'cp_iface_combo') and hasattr(self, '_cp_ifaces') and self._cp_ifaces:
+            val = self.cp_iface_combo.get()
+            if " — " in val:
+                return val.split(" — ")[-1].strip()
+            return self._cp_ifaces[0][1]
+        # Fallback: UDP routing trick
+        import socket
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+
     def _cp_render_servers(self):
-        for w in self.cp_server_frame.winfo_children():
-            w.destroy()
+        """Render server checkboxes inline within the Connection card."""
+        frame = getattr(self, 'cp_server_list_frame', None)
+        if not frame:
+            return
+        try:
+            for w in frame.winfo_children():
+                w.destroy()
+        except Exception:
+            return
         self.cp_server_vars = {}
         if not self.cp_servers:
-            ctk.CTkLabel(
-                self.cp_server_frame,
-                text="Connect to ClearPass to discover cluster servers.",
-                font=("Arial", 11), text_color="gray60"
-            ).pack(anchor="w")
             return
+
+        ctk.CTkFrame(frame, height=1, fg_color="gray30").pack(fill="x", pady=(4, 8))
 
         def toggle_all():
             val = self.cp_select_all_var.get()
@@ -1096,16 +1198,18 @@ Keep this file secure and never share it."""
                 v.set(val)
 
         self.cp_select_all_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(self.cp_server_frame, text="Select All", variable=self.cp_select_all_var,
-                        command=toggle_all).pack(anchor="w", pady=(0, 6))
+        ctk.CTkCheckBox(frame, text="Select All", variable=self.cp_select_all_var,
+                        command=toggle_all).pack(anchor="w", pady=(0, 4))
 
         for srv in self.cp_servers:
             var = ctk.BooleanVar(value=True)
             self.cp_server_vars[srv['uuid']] = var
-            row = ctk.CTkFrame(self.cp_server_frame, fg_color="#222222", corner_radius=6)
+            row = ctk.CTkFrame(frame, fg_color="#222222", corner_radius=6)
             row.pack(fill="x", pady=2)
-            ctk.CTkCheckBox(row, text=f"  {srv['name']}  ({srv['uuid']})",
-                            variable=var, font=("Arial", 11)).pack(anchor="w", padx=10, pady=6)
+            ctk.CTkCheckBox(row, text=f"  {srv['name']}", variable=var,
+                            font=("Arial", 11)).pack(side="left", padx=10, pady=6)
+            ctk.CTkLabel(row, text=srv['uuid'], font=("Courier", 9),
+                         text_color="gray60").pack(side="left")
 
     def _cp_browse_pfx(self):
         path = filedialog.askopenfilename(
@@ -1119,7 +1223,10 @@ Keep this file secure and never share it."""
                 self.cp_pfx_entry.insert(0, path)
 
     def _cp_connect(self):
+        """Connect to ClearPass API using requests (no subprocess)."""
         import threading
+        import queue as _q
+
         host = self.cp_host_entry.get().strip() if hasattr(self, 'cp_host_entry') else ""
         client_id = self.cp_client_id_entry.get().strip() if hasattr(self, 'cp_client_id_entry') else ""
         client_secret = self.cp_client_secret_entry.get().strip() if hasattr(self, 'cp_client_secret_entry') else ""
@@ -1128,64 +1235,212 @@ Keep this file secure and never share it."""
             messagebox.showerror("Missing Fields", "Please fill in Host, Client ID, and Client Secret.")
             return
 
-        verify_ssl = getattr(self, 'cp_verify_ssl_var', None)
-        verify = verify_ssl.get() if verify_ssl else True
+        self.cp_saved_host = host
+        self.cp_saved_client_id = client_id
+
+        verify = self.cp_verify_ssl_var.get() if hasattr(self, 'cp_verify_ssl_var') else True
         base = host if host.startswith("http") else f"https://{host}"
 
-        if hasattr(self, 'cp_conn_status_label'):
-            self.cp_conn_status_label.configure(text="Connecting…", text_color="yellow")
+        try:
+            self.cp_conn_status_label.configure(text="Connecting... (0s)", text_color="yellow")
+            if hasattr(self, 'cp_debug_text'):
+                self.cp_debug_text.delete("1.0", "end")
+                self.cp_debug_frame.pack(fill="x", pady=(4, 0))
+        except Exception:
+            pass
+
+        self._cp_dbg(f"host={host}  verify={verify}")
+
+        # Pre-cache stdlib imports in main thread (avoid import lock in background thread)
+        import json, urllib.parse, uuid as _uuid
+
+        done_q = _q.Queue()
+        _tick = [0]
+
+        def _https_request(hostname, port, method, path, headers, body_bytes=None):
+            """Raw http.client HTTPS call — no proxy detection, no certifi, no requests."""
+            if verify:
+                ctx = _ssl.create_default_context()
+            else:
+                ctx = _ssl._create_unverified_context()
+            conn = http.client.HTTPSConnection(hostname, port, context=ctx, timeout=5)
+            conn.request(method, path, body=body_bytes, headers=headers or {})
+            resp = conn.getresponse()
+            status = resp.status
+            body = resp.read()
+            conn.close()
+            return status, body
 
         def _work():
+            done_q.put(("log", "T0_THREAD_ALIVE"))  # absolute first, before try
             try:
-                import requests as req
-                resp = req.post(
-                    f"{base}/api/oauth",
-                    json={"grant_type": "client_credentials", "client_id": client_id, "client_secret": client_secret},
-                    verify=verify, timeout=15
-                )
-                resp.raise_for_status()
-                token = resp.json().get("access_token", "")
+                done_q.put(("log", "T1_ready"))
+                parsed = urllib.parse.urlparse(base if "://" in base else f"https://{base}")
+                hostname = parsed.hostname or host
+                port = parsed.port or 443
+                done_q.put(("log", f"connect → {hostname}:{port}  verify={verify}"))
+
+                # OAuth token
+                oauth_body = json.dumps({
+                    "grant_type": "client_credentials",
+                    "client_id": client_id,
+                    "client_secret": client_secret
+                }).encode("utf-8")
+                done_q.put(("log", "POST /api/oauth"))
+                status1, body1 = _https_request(
+                    hostname, port, "POST", "/api/oauth", body_bytes=oauth_body,
+                    headers={"Content-Type": "application/json",
+                             "Accept": "application/json",
+                             "Content-Length": str(len(oauth_body))})
+                done_q.put(("log", f"HTTP {status1}  {len(body1)} bytes"))
+                if status1 != 200:
+                    done_q.put(("err", f"HTTP {status1}: {body1[:120].decode('utf-8','replace')}"))
+                    return
+                data = json.loads(body1)
+                token = data.get("access_token", "")
                 if not token:
-                    raise ValueError("No access_token in response")
+                    done_q.put(("log", f"Response: {body1[:200].decode('utf-8','replace')}"))
+                    done_q.put(("err", "No access_token in OAuth response"))
+                    return
+                done_q.put(("log", f"Token OK (len={len(token)})"))
 
-                # Discover servers
-                srv_resp = req.get(f"{base}/api/cluster/server",
-                                   headers={"Authorization": f"Bearer {token}"},
-                                   verify=verify, timeout=15)
+                # Cluster discovery
+                done_q.put(("log", "GET /api/cluster/server"))
+                try:
+                    status2, body2 = _https_request(
+                        hostname, port, "GET", "/api/cluster/server", body_bytes=None,
+                        headers={"Authorization": f"Bearer {token}",
+                                 "Accept": "application/json"})
+                    done_q.put(("log", f"HTTP {status2}  {len(body2)} bytes"))
+                except Exception as e2:
+                    done_q.put(("log", f"cluster req failed: {e2}"))
+                    status2, body2 = 0, b""
+
                 servers = []
-                if srv_resp.status_code == 200:
-                    items = srv_resp.json().get("_embedded", {}).get("items", [])
-                    for item in items:
-                        uuid = item.get("server_uuid") or item.get("uuid", "")
-                        name = item.get("name") or item.get("hostname", uuid)
-                        if uuid:
-                            servers.append({"uuid": uuid, "name": name})
+                if status2 == 200:
+                    try:
+                        for item in json.loads(body2).get("_embedded", {}).get("items", []):
+                            uid = item.get("server_uuid") or item.get("uuid", "")
+                            name = item.get("name") or item.get("hostname", uid)
+                            if uid:
+                                servers.append({"uuid": uid, "name": name})
+                    except Exception as pe:
+                        done_q.put(("log", f"cluster parse: {pe}"))
                 if not servers:
-                    import uuid as _uuid
                     servers = [{"uuid": str(_uuid.uuid4()), "name": host}]
-
-                self.cp_access_token = token
-                self.cp_servers = servers
-                self.after(0, lambda: self._cp_post_connect(success=True))
+                done_q.put(("log", f"Servers: {[s['name'] for s in servers]}"))
+                done_q.put(("ok", token, servers))
             except Exception as e:
-                self.after(0, lambda err=str(e): self._cp_post_connect(success=False, error=err))
+                done_q.put(("log", f"Exception: {type(e).__name__}: {e}"))
+                done_q.put(("err", str(e)[:200]))
+
+        def _poll():
+            try:
+                _tick[0] += 1
+                try:
+                    self.cp_conn_status_label.configure(
+                        text=f"Connecting... (tick {_tick[0] // 5})", text_color="yellow")
+                except Exception:
+                    pass
+                try:
+                    while True:
+                        msg = done_q.get_nowait()
+                        if msg[0] == "log":
+                            self._cp_dbg(msg[1])
+                        elif msg[0] == "ok":
+                            self.cp_access_token = msg[1]
+                            self.cp_servers = msg[2]
+                            self._cp_post_connect(success=True)
+                            return
+                        else:
+                            self._cp_post_connect(success=False, error=msg[1])
+                            return
+                except _q.Empty:
+                    pass
+                except Exception as ex:
+                    try:
+                        self._cp_dbg(f"_poll error: {ex}")
+                    except Exception:
+                        pass
+            except Exception as ex:
+                try:
+                    self._cp_dbg(f"[poll outer exc: {ex}]")
+                except Exception:
+                    pass
+            finally:
+                try:
+                    self.root.after(200, _poll)
+                except Exception as ex:
+                    try:
+                        self._cp_dbg(f"[poll after() failed: {ex}]")
+                    except Exception:
+                        pass
 
         threading.Thread(target=_work, daemon=True).start()
+        _poll()  # call directly to bootstrap; _poll reschedules itself with after()
+
+    def _cp_dbg(self, msg):
+        """Append a line to the debug textbox (main thread only)."""
+        try:
+            if hasattr(self, 'cp_debug_text'):
+                self.cp_debug_text._textbox.insert("end", msg + "\n")
+                self.cp_debug_text._textbox.see("end")
+        except Exception:
+            pass
+
+    def _cp_conn_fail(self, msg):
+        try:
+            self.cp_conn_status_label.configure(text=f"✗ {msg[:90]}", text_color="#ee4444")
+        except Exception:
+            pass
+        self._cp_dbg(f"ERROR: {msg}")
+
+    def _cp_curl(self, method, url, headers=None, body=None, verify=True, timeout=15):
+        """Synchronous curl helper for upload/fetch (called from background threads)."""
+        import subprocess, os
+        curl = None
+        for _p in [r"C:\Windows\System32\curl.exe", r"C:\Windows\curl.exe"]:
+            if os.path.isfile(_p):
+                curl = _p
+                break
+        if not curl:
+            raise FileNotFoundError("curl.exe not found at C:\\Windows\\System32\\curl.exe")
+        cmd = [curl, "-s", "-S", "--connect-timeout", "10", "-m", str(timeout), "--noproxy", "*"]
+        if not verify:
+            cmd.append("-k")
+        cmd.extend(["-X", method, url])
+        for k, v in (headers or {}).items():
+            cmd.extend(["-H", f"{k}: {v}"])
+        if body:
+            cmd.extend(["--data-raw", body])
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5,
+                           stdin=subprocess.DEVNULL,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        if r.returncode != 0:
+            raise ValueError(f"curl error ({r.returncode}): {(r.stderr or r.stdout)[:200]}")
+        return r.stdout
 
     def _cp_post_connect(self, success, error=""):
-        if hasattr(self, 'cp_conn_status_label'):
-            if success:
-                n = len(self.cp_servers)
-                self.cp_conn_status_label.configure(
-                    text=f"✓ Connected — {n} server(s) found", text_color="#44cc44")
-            else:
-                self.cp_conn_status_label.configure(
-                    text=f"✗ {error}", text_color="#ee4444")
-        if success and hasattr(self, 'cp_server_frame'):
-            self._cp_render_servers()
+        try:
+            if hasattr(self, 'cp_conn_status_label'):
+                if success:
+                    n = len(self.cp_servers)
+                    self.cp_conn_status_label.configure(
+                        text=f"● Connected — {n} server(s) found", text_color="#44cc44")
+                else:
+                    self.cp_conn_status_label.configure(
+                        text=f"✗ {error}", text_color="#ee4444")
+        except Exception:
+            pass
+        if success:
+            try:
+                self._cp_render_servers()
+            except Exception:
+                pass
 
     def _cp_upload(self):
-        import threading, http.server, socket, os
+        import threading, http.server, os
+        from urllib.parse import quote as url_quote
 
         if not self.cp_access_token:
             messagebox.showerror("Not Connected", "Please connect to ClearPass first.")
@@ -1200,27 +1455,20 @@ Keep this file secure and never share it."""
             return
 
         passphrase = self.cp_passphrase_entry.get() if hasattr(self, 'cp_passphrase_entry') else ""
-        service = self.cp_service_var.get() if hasattr(self, 'cp_service_var') else "HTTPS"
+        service = self.cp_service_var.get() if hasattr(self, 'cp_service_var') else "HTTPS(RSA)"
         verify = self.cp_verify_ssl_var.get() if hasattr(self, 'cp_verify_ssl_var') else True
         host_val = self.cp_host_entry.get().strip() if hasattr(self, 'cp_host_entry') else ""
         base = host_val if host_val.startswith("http") else f"https://{host_val}"
         token = self.cp_access_token
         servers_map = {s['uuid']: s['name'] for s in self.cp_servers}
+        local_ip = self._cp_selected_ip()
+        encoded_service = url_quote(service, safe="")
 
-        def _get_local_ip():
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.connect(("8.8.8.8", 80))
-                ip = s.getsockname()[0]
-                s.close()
-                return ip
-            except Exception:
-                return "127.0.0.1"
+        import queue as _queue
+        done_q = _queue.Queue()
 
         def _work():
-            import requests as req
-
-            # Start temporary HTTP server
+            import json as _json, shutil
             pfx_data = open(pfx_path, "rb").read()
 
             class _Handler(http.server.BaseHTTPRequestHandler):
@@ -1233,92 +1481,140 @@ Keep this file secure and never share it."""
                 def log_message(self, *args):
                     pass
 
-            port = 0
-            httpd = http.server.HTTPServer(("", port), _Handler)
-            port = httpd.server_address[1]
-            srv_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-            srv_thread.start()
+            httpd = http.server.HTTPServer(("", 0), _Handler)
+            srv_port = httpd.server_address[1]
+            threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-            local_ip = _get_local_ip()
-            pfx_url = f"http://{local_ip}:{port}/cert.pfx"
+            pfx_url = f"http://{local_ip}:{srv_port}/cert.pfx"
             results = []
+            use_curl = bool(shutil.which("curl") or shutil.which("curl.exe"))
             try:
+                # Self-test (localhost, no SSL — requests is fine here)
+                try:
+                    import requests
+                    s = requests.Session()
+                    s.trust_env = False
+                    test_r = s.get(pfx_url, timeout=5)
+                    if test_r.ok and test_r.content:
+                        results.append(f"✓ File server OK — serving {len(test_r.content)} bytes at {pfx_url}")
+                    else:
+                        results.append(f"⚠ File server returned empty response at {pfx_url}")
+                except Exception as e:
+                    results.append(f"✗ File server unreachable at {pfx_url}: {e}")
+                    results.append("⚠ ClearPass must be able to reach this URL to download the certificate")
+                    self.cp_upload_results = results
+                    done_q.put(True)
+                    return
+
                 for uuid in selected:
                     name = servers_map.get(uuid, uuid)
                     try:
-                        url = f"{base}/api/server-cert/name/{uuid}/{service}"
-                        r = req.put(url,
-                                    json={"pkcs12_file_url": pfx_url, "pkcs12_passphrase": passphrase},
-                                    headers={"Authorization": f"Bearer {token}",
-                                             "Content-Type": "application/json"},
-                                    verify=verify, timeout=60)
-                        if r.ok:
+                        url = f"{base}/api/server-cert/name/{uuid}/{encoded_service}"
+                        body = _json.dumps({"pkcs12_file_url": pfx_url, "pkcs12_passphrase": passphrase})
+                        if use_curl:
+                            raw = self._cp_curl("PUT", url,
+                                headers={"Authorization": f"Bearer {token}",
+                                         "Content-Type": "application/json"},
+                                body=body, verify=verify, timeout=60)
                             results.append(f"✓ {name}: certificate updated successfully")
                         else:
-                            results.append(f"✗ {name}: HTTP {r.status_code} — {r.text[:120]}")
+                            r = s.put(url, data=body,
+                                     headers={"Authorization": f"Bearer {token}",
+                                              "Content-Type": "application/json"},
+                                     verify=verify, timeout=(5, 60))
+                            if r.ok:
+                                results.append(f"✓ {name}: certificate updated successfully")
+                            else:
+                                results.append(f"✗ {name}: HTTP {r.status_code} — {r.text[:120]}")
                     except Exception as e:
                         results.append(f"✗ {name}: {e}")
             finally:
                 httpd.shutdown()
 
             self.cp_upload_results = results
-            self.after(0, lambda: self.show_view("clearpass"))
+            done_q.put(True)
+
+        def _poll_upload():
+            try:
+                done_q.get_nowait()
+                self.show_view("clearpass")
+            except _queue.Empty:
+                self.root.after(200, _poll_upload)
 
         threading.Thread(target=_work, daemon=True).start()
+        self.root.after(200, _poll_upload)
 
     def _cp_fetch_certs(self):
         """Fetch current certificates for all discovered servers."""
-        import threading
+        import threading, queue, json, shutil
+        from urllib.parse import quote as url_quote
+
         if not self.cp_access_token or not self.cp_servers:
+            messagebox.showerror("Not Connected", "Please connect to ClearPass first.")
             return
-        service = self.cp_inspect_service_var.get() if hasattr(self, 'cp_inspect_service_var') else "HTTPS"
+
+        service = self.cp_inspect_service_var.get() if hasattr(self, 'cp_inspect_service_var') else "HTTPS(RSA)"
         verify = self.cp_verify_ssl_var.get() if hasattr(self, 'cp_verify_ssl_var') else True
         host_val = self.cp_host_entry.get().strip() if hasattr(self, 'cp_host_entry') else ""
         base = host_val if host_val.startswith("http") else f"https://{host_val}"
         token = self.cp_access_token
+        encoded_service = url_quote(service, safe="")
+        done_q = queue.Queue()
+        use_curl = bool(shutil.which("curl") or shutil.which("curl.exe"))
 
         def _work():
-            import requests as req
             results = []
             for srv in self.cp_servers:
                 uuid, name = srv['uuid'], srv['name']
                 try:
-                    r = req.get(f"{base}/api/server-cert/name/{uuid}/{service}",
-                                headers={"Authorization": f"Bearer {token}"},
-                                verify=verify, timeout=15)
-                    if r.ok:
-                        j = r.json()
-                        cert_id = j.get("service_id")
-                        results.append({
-                            "uuid": uuid, "name": name,
-                            "cert_id": str(cert_id) if cert_id else None,
-                            "subject": j.get("subject", "—"),
-                            "issued_by": j.get("issued_by", "—"),
-                            "expiry_date": j.get("expiry_date", "—"),
-                            "service": service
-                        })
+                    url = f"{base}/api/server-cert/name/{uuid}/{encoded_service}"
+                    hdrs = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+                    if use_curl:
+                        raw = self._cp_curl("GET", url, headers=hdrs, verify=verify, timeout=15)
+                        j = json.loads(raw)
                     else:
-                        results.append({
-                            "uuid": uuid, "name": name, "cert_id": None,
-                            "subject": f"HTTP {r.status_code}", "issued_by": "—",
-                            "expiry_date": "—", "service": service
-                        })
+                        import requests
+                        s = requests.Session()
+                        s.trust_env = False
+                        r = s.get(url, headers=hdrs, verify=verify, timeout=(5, 10))
+                        if not r.ok:
+                            raise ValueError(f"HTTP {r.status_code}")
+                        j = r.json()
+                    results.append({
+                        "uuid": uuid, "name": name,
+                        "subject": j.get("subject", "—"),
+                        "issued_by": j.get("issued_by", "—"),
+                        "expiry_date": j.get("expiry_date", "—"),
+                        "service": service
+                    })
                 except Exception as e:
                     results.append({
-                        "uuid": uuid, "name": name, "cert_id": None,
-                        "subject": str(e), "issued_by": "—",
+                        "uuid": uuid, "name": name,
+                        "subject": str(e)[:80], "issued_by": "—",
                         "expiry_date": "—", "service": service
                     })
             self.cp_current_certs = results
-            self.after(0, self._cp_render_current_certs)
+            done_q.put(True)
+
+        def _poll_certs():
+            try:
+                done_q.get_nowait()
+                self._cp_render_current_certs()
+            except queue.Empty:
+                self.root.after(200, _poll_certs)
+
         threading.Thread(target=_work, daemon=True).start()
+        self.root.after(200, _poll_certs)
 
     def _cp_render_current_certs(self):
         """Render fetched certificate info cards."""
         if not hasattr(self, 'cp_cert_display_frame'):
             return
-        for w in self.cp_cert_display_frame.winfo_children():
-            w.destroy()
+        try:
+            for w in self.cp_cert_display_frame.winfo_children():
+                w.destroy()
+        except Exception:
+            return
         if not hasattr(self, 'cp_current_certs') or not self.cp_current_certs:
             return
         for cert in self.cp_current_certs:
@@ -1326,12 +1622,12 @@ Keep this file secure and never share it."""
             row.pack(fill="x", pady=2)
             inner = ctk.CTkFrame(row, fg_color="transparent")
             inner.pack(fill="x", padx=12, pady=8)
-            # Header row: name + service + expiry badge
+            # Header: name · service   expiry badge
             hdr = ctk.CTkFrame(inner, fg_color="transparent")
             hdr.pack(fill="x")
             ctk.CTkLabel(hdr, text=cert['name'], font=("Arial", 12, "bold")).pack(side="left")
             ctk.CTkLabel(hdr, text=f"  ·  {cert['service']}", font=("Arial", 10), text_color="gray60").pack(side="left")
-            # Expiry badge
+            # Expiry colour-coding
             exp_text = cert['expiry_date']
             exp_color = "gray60"
             try:
@@ -1355,139 +1651,13 @@ Keep this file secure and never share it."""
             except Exception:
                 pass
             ctk.CTkLabel(hdr, text=exp_text, font=("Arial", 10), text_color=exp_color).pack(side="right")
-            # Export button
-            if cert.get('cert_id'):
-                ctk.CTkButton(hdr, text="Export", width=70, height=26, font=("Arial", 10),
-                              command=lambda c=cert: self._cp_export_cert(c)).pack(side="right", padx=(0, 8))
-            # Details
+            # Detail rows
             for lbl, key in [("Subject:", "subject"), ("Issuer:", "issued_by"), ("Expires:", "expiry_date")]:
                 dl = ctk.CTkFrame(inner, fg_color="transparent")
                 dl.pack(fill="x")
                 ctk.CTkLabel(dl, text=lbl, font=("Arial", 10, "bold"), width=60, anchor="w").pack(side="left")
-                ctk.CTkLabel(dl, text=cert.get(key, "—"), font=("Courier", 10), text_color="gray70", anchor="w").pack(side="left")
-
-    def _cp_export_cert(self, cert_info):
-        """Export a certificate from ClearPass as PKCS#12 with a password dialog."""
-        import threading
-
-        # Password dialog
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("Export Certificate")
-        dialog.geometry("380x260")
-        dialog.resizable(False, False)
-        dialog.grab_set()
-        dialog.lift()
-
-        ctk.CTkLabel(dialog, text=f"Export: {cert_info['name']} — {cert_info['service']}",
-                     font=("Arial", 13, "bold")).pack(padx=20, pady=(16, 4))
-        ctk.CTkLabel(dialog, text="Enter a password to protect the PKCS#12 (.p12) file.",
-                     font=("Arial", 10), text_color="gray60").pack(padx=20, pady=(0, 10))
-
-        pw1 = ctk.CTkEntry(dialog, placeholder_text="Export Password", show="*", height=36)
-        pw1.pack(fill="x", padx=20, pady=2)
-        pw2 = ctk.CTkEntry(dialog, placeholder_text="Confirm Password", show="*", height=36)
-        pw2.pack(fill="x", padx=20, pady=2)
-
-        chain_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(dialog, text="Include certificate chain", variable=chain_var).pack(padx=20, pady=6, anchor="w")
-
-        status_label = ctk.CTkLabel(dialog, text="", font=("Arial", 10))
-        status_label.pack(padx=20)
-
-        def do_export():
-            password = pw1.get()
-            password2 = pw2.get()
-            if not password:
-                status_label.configure(text="Password is required.", text_color="#ee4444")
-                return
-            if password != password2:
-                status_label.configure(text="Passwords do not match.", text_color="#ee4444")
-                return
-
-            cert_id = cert_info['cert_id']
-            verify = self.cp_verify_ssl_var.get() if hasattr(self, 'cp_verify_ssl_var') else True
-            host_val = self.cp_host_entry.get().strip() if hasattr(self, 'cp_host_entry') else ""
-            base = host_val if host_val.startswith("http") else f"https://{host_val}"
-            token = self.cp_access_token
-            include_chain = chain_var.get()
-            status_label.configure(text="Exporting…", text_color="yellow")
-
-            def _work():
-                try:
-                    import requests as req
-                    r = req.post(
-                        f"{base}/api/certificate/{cert_id}/export",
-                        json={
-                            "export_format": "pkcs12",
-                            "include_chain": include_chain,
-                            "export_password": password,
-                            "export_password2": password
-                        },
-                        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-                        verify=verify, timeout=30
-                    )
-                    if r.ok:
-                        save_path = filedialog.asksaveasfilename(
-                            defaultextension=".p12",
-                            filetypes=[("PKCS#12 files", "*.p12 *.pfx"), ("All files", "*.*")],
-                            initialfile=f"{cert_info['name']}_{cert_info['service']}.p12",
-                            initialdir=self.save_directory
-                        )
-                        if save_path:
-                            with open(save_path, "wb") as f:
-                                f.write(r.content)
-                            self.after(0, lambda: status_label.configure(
-                                text=f"✓ Saved to {os.path.basename(save_path)}", text_color="#44cc44"))
-                        else:
-                            self.after(0, lambda: status_label.configure(text="Cancelled.", text_color="gray60"))
-                    else:
-                        msg = r.text[:120]
-                        self.after(0, lambda m=msg: status_label.configure(
-                            text=f"✗ HTTP {r.status_code}: {m}", text_color="#ee4444"))
-                except Exception as e:
-                    self.after(0, lambda err=str(e): status_label.configure(text=f"✗ {err}", text_color="#ee4444"))
-            threading.Thread(target=_work, daemon=True).start()
-
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=20, pady=(6, 16))
-        ctk.CTkButton(btn_frame, text="Cancel", command=dialog.destroy, width=80, fg_color="gray30").pack(side="left")
-        ctk.CTkButton(btn_frame, text="Export", command=do_export, width=80).pack(side="right")
-
-    # ------------------------------------------------------------------
-    # pyclearpass Reference (Windows)
-    # ------------------------------------------------------------------
-    #
-    # For automated ClearPass cert management on Windows, consider using
-    # the official Aruba pyclearpass SDK (pip install pyclearpass).
-    #
-    # Authentication:
-    #   from pyclearpass import ClearPassAPILogin
-    #   login = ClearPassAPILogin(server="clearpass.example.com",
-    #       granttype="client_credentials", clientid="...", clientsecret="...",
-    #       verify_ssl=False)
-    #
-    # Fetch current server certificate:
-    #   from pyclearpass import ApiPlatformCertificates
-    #   certs = ApiPlatformCertificates(login)
-    #   info = certs.get_server_cert_name_by_server_uuid_service_name(
-    #       server_uuid="<uuid>", service_name="HTTPS")
-    #
-    # Replace server certificate:
-    #   certs.replace_server_cert_name_by_server_uuid_service_name(
-    #       server_uuid="<uuid>", service_name="HTTPS",
-    #       body={"pkcs12_file_url": "http://...", "pkcs12_passphrase": "..."})
-    #
-    # Export CA certificate (PKCS#12):
-    #   from pyclearpass import ApiCertificateAuthority
-    #   ca = ApiCertificateAuthority(login)
-    #   result = ca.new_certificate_by_cert_id_export(
-    #       cert_id="<id>",
-    #       body={"export_format": "pkcs12", "include_chain": True,
-    #             "export_password": "pass", "export_password2": "pass"})
-    #
-    # Docs: https://pypi.org/project/pyclearpass/
-    # Source: https://github.com/aruba/pyclearpass
-    # ------------------------------------------------------------------
+                ctk.CTkLabel(dl, text=cert.get(key, "—"), font=("Courier", 10),
+                             text_color="gray70", anchor="w").pack(side="left")
 
     def show_settings_view(self):
         # Header
