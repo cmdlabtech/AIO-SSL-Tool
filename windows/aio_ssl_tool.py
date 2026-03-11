@@ -1249,13 +1249,12 @@ Keep this file secure and never share it."""
         except Exception:
             pass
 
-        self._cp_dbg(f"host={host}  verify={verify}")
+        self._cp_dbg(f"Connecting to {host}...")
 
         # Pre-cache stdlib imports in main thread (avoid import lock in background thread)
         import json, urllib.parse, uuid as _uuid
 
         done_q = _q.Queue()
-        _tick = [0]
 
         def _https_request(hostname, port, method, path, headers, body_bytes=None):
             """Raw http.client HTTPS call — no proxy detection, no certifi, no requests."""
@@ -1272,13 +1271,10 @@ Keep this file secure and never share it."""
             return status, body
 
         def _work():
-            done_q.put(("log", "T0_THREAD_ALIVE"))  # absolute first, before try
             try:
-                done_q.put(("log", "T1_ready"))
                 parsed = urllib.parse.urlparse(base if "://" in base else f"https://{base}")
                 hostname = parsed.hostname or host
                 port = parsed.port or 443
-                done_q.put(("log", f"connect → {hostname}:{port}  verify={verify}"))
 
                 # OAuth token
                 oauth_body = json.dumps({
@@ -1286,15 +1282,14 @@ Keep this file secure and never share it."""
                     "client_id": client_id,
                     "client_secret": client_secret
                 }).encode("utf-8")
-                done_q.put(("log", "POST /api/oauth"))
+                done_q.put(("log", "Requesting OAuth token..."))
                 status1, body1 = _https_request(
                     hostname, port, "POST", "/api/oauth", body_bytes=oauth_body,
                     headers={"Content-Type": "application/json",
                              "Accept": "application/json",
                              "Content-Length": str(len(oauth_body))})
-                done_q.put(("log", f"HTTP {status1}  {len(body1)} bytes"))
                 if status1 != 200:
-                    done_q.put(("err", f"HTTP {status1}: {body1[:120].decode('utf-8','replace')}"))
+                    done_q.put(("err", f"OAuth failed (HTTP {status1}): {body1[:120].decode('utf-8','replace')}"))
                     return
                 data = json.loads(body1)
                 token = data.get("access_token", "")
@@ -1302,18 +1297,16 @@ Keep this file secure and never share it."""
                     done_q.put(("log", f"Response: {body1[:200].decode('utf-8','replace')}"))
                     done_q.put(("err", "No access_token in OAuth response"))
                     return
-                done_q.put(("log", f"Token OK (len={len(token)})"))
+                done_q.put(("log", "OAuth token received. Discovering servers..."))
 
                 # Cluster discovery
-                done_q.put(("log", "GET /api/cluster/server"))
                 try:
                     status2, body2 = _https_request(
                         hostname, port, "GET", "/api/cluster/server", body_bytes=None,
                         headers={"Authorization": f"Bearer {token}",
                                  "Accept": "application/json"})
-                    done_q.put(("log", f"HTTP {status2}  {len(body2)} bytes"))
                 except Exception as e2:
-                    done_q.put(("log", f"cluster req failed: {e2}"))
+                    done_q.put(("log", f"Cluster discovery failed: {e2}"))
                     status2, body2 = 0, b""
 
                 servers = []
@@ -1325,21 +1318,20 @@ Keep this file secure and never share it."""
                             if uid:
                                 servers.append({"uuid": uid, "name": name})
                     except Exception as pe:
-                        done_q.put(("log", f"cluster parse: {pe}"))
+                        done_q.put(("log", f"Cluster parse error: {pe}"))
                 if not servers:
                     servers = [{"uuid": str(_uuid.uuid4()), "name": host}]
-                done_q.put(("log", f"Servers: {[s['name'] for s in servers]}"))
+                names = ", ".join(s['name'] for s in servers)
+                done_q.put(("log", f"Found {len(servers)} server(s): {names}"))
                 done_q.put(("ok", token, servers))
             except Exception as e:
-                done_q.put(("log", f"Exception: {type(e).__name__}: {e}"))
-                done_q.put(("err", str(e)[:200]))
+                done_q.put(("err", f"{type(e).__name__}: {e}"))
 
         def _poll():
             try:
-                _tick[0] += 1
                 try:
                     self.cp_conn_status_label.configure(
-                        text=f"Connecting... (tick {_tick[0] // 5})", text_color="yellow")
+                        text="Connecting...", text_color="yellow")
                 except Exception:
                     pass
                 try:
@@ -1435,6 +1427,10 @@ Keep this file secure and never share it."""
         if success:
             try:
                 self._cp_render_servers()
+            except Exception:
+                pass
+            try:
+                self.cp_debug_frame.pack_forget()
             except Exception:
                 pass
 
