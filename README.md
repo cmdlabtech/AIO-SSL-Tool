@@ -11,7 +11,13 @@ A native macOS application and cross-platform desktop tool built for sysadmins a
 | **🍎 macOS** | [**Download DMG (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-macOS-V6.3.1.dmg) | macOS 14.0+ (Sonoma/Sequoia) |
 | **🪟 Windows** | [**Download EXE (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-Windows-V6.3.1.exe) | Windows 10/11 |
 
+## ClearPass API - Generating Client ID + Secret
 
+ClearPass Guest -> Administration -> API Clients -> Create API Client
+
+Match picture below for generating Client ID and Client Secret
+![alt text](image.png)
+Note: You can adjust Access Token Lifetime to a shorter window for better security practices. Every time you want to use this feature of the tool, a new secret will have to be generated. 
 
 ## ☕ Support
 
