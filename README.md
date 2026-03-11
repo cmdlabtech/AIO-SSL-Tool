@@ -1,24 +1,3 @@
-# AIO SSL Tool
-
-**The fastest way to turn any server certificate into a complete, trusted chain and ready-to-use PFX — in seconds.**
-
-A native macOS application and cross-platform desktop tool built for sysadmins and DevOps who need perfect SSL certificates without the hassle.
-
-## 📥 Download Latest Version
-
-| Platform | Download | Requirements |
-|----------|----------|--------------|
-| **🍎 macOS** | [**Download DMG (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-macOS-V6.3.1.dmg) | macOS 14.0+ (Sonoma/Sequoia) |
-| **🪟 Windows** | [**Download EXE (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-Windows-V6.3.1.exe) | Windows 10/11 |
-
-## ClearPass API - Generating Client ID + Secret
-
-ClearPass Guest -> Administration -> API Clients -> Create API Client
-
-Match picture below for generating Client ID and Client Secret
-![alt text](image.png)
-Note: You can adjust Access Token Lifetime to a shorter window for better security practices. Every time you want to use this feature of the tool, a new secret will have to be generated. 
-
 ## ☕ Support
 
 This is a free tool built for the community — no expectations, no obligations. I genuinely enjoy building it.
@@ -27,19 +6,15 @@ That said, if you'd like to see bigger improvements or help make a Mac App Store
 
 Either way, thanks for using it!
 
----
 
-### Installation
 
-**macOS:**  
-The app is unsigned, so on first launch you'll need to right-click the app and select "Open" (or use System Settings → Privacy & Security → "Open Anyway").
+# AIO SSL Tool
 
-**Windows:**  
-Run the EXE directly. If Windows Defender warns you, click "More info" → "Run anyway".
+**The fastest way to turn any server certificate into a complete, trusted chain and ready-to-use PFX — in seconds.**
 
----
+A native macOS application and cross-platform desktop tool built for sysadmins and DevOps who need perfect SSL certificates without the hassle.
 
-## ✨ Features
+### ✨ Features
 
 - **🔐 CSR Generation** - Create Certificate Signing Requests and Private Keys with an intuitive interface
 - **🔗 Full Chain Building** - Automatically constructs complete certificate chains from server certificates
@@ -51,15 +26,29 @@ Run the EXE directly. If Windows Defender warns you, click "More info" → "Run 
 
 ---
 
-## 🔄 Update Notifications (macOS)
+## 📥 Download Latest Version
 
-The macOS version includes built-in update checking:
+| Platform | Download | Requirements |
+|----------|----------|--------------|
+| **🍎 macOS** | [**Download DMG (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-macOS-V6.3.1.dmg) | macOS 14.0+ (Sonoma/Sequoia) |
+| **🪟 Windows** | [**Download EXE (V6.3.1)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.3.1/AIO-SSL-Tool-Windows-V6.3.1.exe) | Windows 10/11 |
 
-- **Automatic Checking** - Checks for updates daily in the background
-- **Browser Download** - Opens GitHub release page for manual download
-- **User Control** - Configure automatic checks in Settings
+## ClearPass API: Generating Client ID + Secret
 
-Updates can be managed in **Settings > Updates** within the app.
+ClearPass Guest -> Administration -> API Clients -> Create API Client
+
+Match picture below for generating Client ID and Client Secret
+
+![alt text](image.png)
+Note: You can adjust Access Token Lifetime to a shorter window for better security practices. Every time you want to use this feature of the tool, a new secret will have to be generated. 
+
+### Installation
+
+**macOS:**  
+The app is unsigned, so on first launch you'll need to right-click the app and select "Open" (or use System Settings → Privacy & Security → "Open Anyway").
+
+**Windows:**  
+Run the EXE directly. If Windows Defender warns you, click "More info" → "Run anyway".
 
 ---
 
