@@ -1,7 +1,7 @@
 @echo off
 REM =====================================
 REM AIO SSL Tool - Windows Build Script
-REM Version 6.3.0
+REM Version 6.3.1
 REM =====================================
 
 setlocal enabledelayedexpansion
@@ -9,7 +9,7 @@ setlocal enabledelayedexpansion
 echo.
 echo =====================================
 echo  AIO SSL Tool - Windows Build
-echo  Version 6.3.0
+echo  Version 6.3.1
 echo =====================================
 echo.
 

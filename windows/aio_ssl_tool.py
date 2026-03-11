@@ -1693,7 +1693,7 @@ Keep this file secure and never share it."""
             pass
         
         ctk.CTkLabel(icon_frame, text="AIO SSL Suite", font=("Arial", 20, "bold")).pack()
-        ctk.CTkLabel(icon_frame, text="Version V6.3.0", font=("Arial", 12), text_color="gray70").pack(pady=5)
+        ctk.CTkLabel(icon_frame, text="Version V6.3.1", font=("Arial", 12), text_color="gray70").pack(pady=5)
         
         # About Section
         about_frame = ctk.CTkFrame(scroll_frame, corner_radius=12, fg_color="#1a1a1a")
