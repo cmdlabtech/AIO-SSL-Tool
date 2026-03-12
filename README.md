@@ -24,7 +24,6 @@ A native macOS application and cross-platform desktop tool built for sysadmins a
 - **🔒 Privacy First** - All processing happens locally on your machine
 - **⚡ Fast & Lightweight** - Native Swift on macOS, efficient Python on Windows
 
----
 
 ## 📥 Download Latest Version
 
