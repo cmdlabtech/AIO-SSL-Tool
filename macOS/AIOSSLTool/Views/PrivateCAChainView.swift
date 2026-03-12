@@ -10,25 +10,43 @@ struct PrivateCAChainView: View {
     @ObservedObject var viewModel: SSLToolViewModel
 
     @State private var serverCertURL: URL?
-    @State private var subCAURL: URL?
+    @State private var subCAURLs: [URL?] = [nil]
     @State private var rootCAURL: URL?
     @State private var serverCertTargeted = false
-    @State private var subCATargeted = false
+    @State private var subCATargeted: [Bool] = [false]
     @State private var rootCATargeted = false
     @State private var isBuilding = false
     @State private var buildError: String?
     @State private var showBuildError = false
     @State private var showBuildSuccess = false
     @State private var buildSuccessMessage = ""
+    @State private var showInfoPopover = false
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
                 VStack(alignment: .leading) {
-                    Text("Private CA Chain")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
+                    HStack(spacing: 8) {
+                        Text("Private CA Chain")
+                            .font(.largeTitle)
+                            .fontWeight(.bold)
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.secondary)
+                            .imageScale(.medium)
+                            .onHover { hovering in showInfoPopover = hovering }
+                            .popover(isPresented: $showInfoPopover, arrowEdge: .bottom) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Output: FullChain.cer")
+                                        .fontWeight(.semibold)
+                                    Text("Files are concatenated in order:\nServer Certificate → Sub CA(s) → Root CA.\nThe result is saved to your working directory.")
+                                        .font(.callout)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(14)
+                                .frame(maxWidth: 320)
+                            }
+                    }
                     Text("Assemble a full-chain certificate from local CA files")
                         .foregroundColor(.secondary)
                 }
@@ -57,14 +75,47 @@ struct PrivateCAChainView: View {
                                     fileURL: $serverCertURL,
                                     isTargeted: $serverCertTargeted
                                 )
-                                Divider()
-                                CertFileDropRow(
-                                    title: "Subordinate CA",
-                                    subtitle: "Intermediate / sub-CA certificate — omit if not applicable",
-                                    isOptional: true,
-                                    fileURL: $subCAURL,
-                                    isTargeted: $subCATargeted
-                                )
+
+                                ForEach(Array(subCAURLs.enumerated()), id: \.offset) { index, _ in
+                                    Divider()
+                                    CertFileDropRow(
+                                        title: subCAURLs.count == 1 ? "Subordinate CA" : "Sub CA \(index + 1)",
+                                        subtitle: "Intermediate / sub-CA certificate — omit if not applicable",
+                                        isOptional: true,
+                                        onRemove: subCAURLs.count > 1 ? {
+                                            subCAURLs.remove(at: index)
+                                            subCATargeted.remove(at: index)
+                                        } : nil,
+                                        fileURL: Binding(
+                                            get: { subCAURLs[index] },
+                                            set: { subCAURLs[index] = $0 }
+                                        ),
+                                        isTargeted: Binding(
+                                            get: { subCATargeted[index] },
+                                            set: { subCATargeted[index] = $0 }
+                                        )
+                                    )
+                                }
+
+                                // Add Sub CA button (up to 3 sub CAs)
+                                if subCAURLs.count < 3 {
+                                    HStack(spacing: 12) {
+                                        Color.clear.frame(width: 210)
+                                        Spacer()
+                                        Button(action: {
+                                            subCAURLs.append(nil)
+                                            subCATargeted.append(false)
+                                        }) {
+                                            Label("Add Sub CA", systemImage: "plus.circle.fill")
+                                                .font(.callout)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .foregroundStyle(.green)
+                                        Spacer()
+                                        Color.clear.frame(width: 88) // Browse + spacing + remove placeholder
+                                    }
+                                }
+
                                 Divider()
                                 CertFileDropRow(
                                     title: "Root CA",
@@ -76,22 +127,6 @@ struct PrivateCAChainView: View {
                             }
                             .padding()
                         }
-
-                        // Info box
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.accentColor)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Output: FullChain.cer")
-                                    .fontWeight(.medium)
-                                Text("Files are concatenated in order: Server Certificate → Subordinate CA → Root CA. The result is saved to your working directory.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(12)
-                        .background(Color.accentColor.opacity(0.08))
-                        .cornerRadius(8)
 
                         HStack {
                             Spacer()
@@ -122,7 +157,8 @@ struct PrivateCAChainView: View {
         .alert("Success", isPresented: $showBuildSuccess) {
             Button("OK") {
                 serverCertURL = nil
-                subCAURL = nil
+                subCAURLs = [nil]
+                subCATargeted = [false]
                 rootCAURL = nil
             }
         } message: {
@@ -142,10 +178,12 @@ struct PrivateCAChainView: View {
                 var pem = try String(contentsOf: serverCert, encoding: .utf8)
                 if !pem.hasSuffix("\n") { pem += "\n" }
 
-                if let subCA = subCAURL {
-                    var subPEM = try String(contentsOf: subCA, encoding: .utf8)
-                    if !subPEM.hasSuffix("\n") { subPEM += "\n" }
-                    pem += subPEM
+                for subCAURL in subCAURLs {
+                    if let subCA = subCAURL {
+                        var subPEM = try String(contentsOf: subCA, encoding: .utf8)
+                        if !subPEM.hasSuffix("\n") { subPEM += "\n" }
+                        pem += subPEM
+                    }
                 }
 
                 var rootPEM = try String(contentsOf: rootCA, encoding: .utf8)
@@ -177,6 +215,7 @@ struct CertFileDropRow: View {
     let title: String
     let subtitle: String
     let isOptional: Bool
+    var onRemove: (() -> Void)? = nil
     @Binding var fileURL: URL?
     @Binding var isTargeted: Bool
 
@@ -252,10 +291,25 @@ struct CertFileDropRow: View {
                 return true
             }
 
-            Button("Browse") {
-                browseFile()
+            // Trailing buttons — fixed layout so all drop zones align
+            HStack(spacing: 6) {
+                Button("Browse") {
+                    browseFile()
+                }
+                .controlSize(.small)
+
+                if let onRemove {
+                    Button(action: onRemove) {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundColor(.red)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    // Invisible placeholder keeps drop zone width consistent
+                    Color.clear.frame(width: 20)
+                }
             }
-            .controlSize(.small)
         }
     }
 

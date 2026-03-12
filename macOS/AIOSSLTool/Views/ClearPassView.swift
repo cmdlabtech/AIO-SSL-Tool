@@ -304,8 +304,8 @@ struct ClearPassView: View {
                                 Picker("Service", selection: $selectedService) {
                                     ForEach(services, id: \.self) { s in Text(s).tag(s) }
                                 }
-                                .frame(width: 200)
-                                Spacer()
+                                .labelsHidden()
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
 
                             HStack {
@@ -348,6 +348,7 @@ struct ClearPassView: View {
                                     Picker("Service", selection: $inspectService) {
                                         ForEach(services, id: \.self) { s in Text(s).tag(s) }
                                     }
+                                    .labelsHidden()
                                     .frame(width: 180)
                                     Spacer()
                                     if isFetchingCerts { ProgressView().controlSize(.small).padding(.trailing, 6) }

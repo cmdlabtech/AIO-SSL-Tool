@@ -594,8 +594,8 @@ class AIOSSLToolApp:
         # Initialize file path state variables if needed
         if not hasattr(self, 'pca_server_cert'):
             self.pca_server_cert = None
-        if not hasattr(self, 'pca_sub_ca'):
-            self.pca_sub_ca = None
+        if not hasattr(self, 'pca_sub_cas'):
+            self.pca_sub_cas = [None]
         if not hasattr(self, 'pca_root_ca'):
             self.pca_root_ca = None
 
@@ -642,7 +642,73 @@ class AIOSSLToolApp:
             return entry
 
         make_file_row(card_content, "Server Certificate", optional=False, attr_name="pca_server_cert")
-        make_file_row(card_content, "Subordinate CA", optional=True, attr_name="pca_sub_ca")
+
+        # Dynamic Sub CA section (up to 3)
+        sub_ca_container = ctk.CTkFrame(card_content, fg_color="transparent")
+        sub_ca_container.pack(fill="x")
+
+        def render_sub_ca_rows():
+            for widget in sub_ca_container.winfo_children():
+                widget.destroy()
+
+            for i in range(len(self.pca_sub_cas)):
+                label_text = "Subordinate CA" if len(self.pca_sub_cas) == 1 else f"Sub CA {i + 1}"
+                row = ctk.CTkFrame(sub_ca_container, fg_color="#222222", corner_radius=8)
+                row.pack(fill="x", pady=4)
+                inner = ctk.CTkFrame(row, fg_color="transparent")
+                inner.pack(fill="x", padx=12, pady=10)
+
+                lbl_frame = ctk.CTkFrame(inner, fg_color="transparent")
+                lbl_frame.pack(anchor="w", pady=(0, 6))
+                ctk.CTkLabel(lbl_frame, text=label_text, font=("Arial", 13, "bold")).pack(side="left")
+                ctk.CTkLabel(lbl_frame, text=" (Optional)", font=("Arial", 11), text_color="gray60").pack(side="left")
+
+                entry_frame = ctk.CTkFrame(inner, fg_color="transparent")
+                entry_frame.pack(fill="x")
+                entry = ctk.CTkEntry(entry_frame, placeholder_text="No file selected", height=36)
+                entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+                if self.pca_sub_cas[i]:
+                    entry.insert(0, self.pca_sub_cas[i])
+
+                def browse_sub(e=entry, idx=i):
+                    path = filedialog.askopenfilename(
+                        initialdir=self.save_directory,
+                        title="Select Subordinate CA",
+                        filetypes=[("Certificates", "*.cer *.crt *.pem"), ("All files", "*.*")]
+                    )
+                    if path:
+                        self.pca_sub_cas[idx] = path
+                        e.delete(0, "end")
+                        e.insert(0, path)
+
+                ctk.CTkButton(entry_frame, text="Browse", command=browse_sub, height=36, width=90).pack(side="left")
+
+                if len(self.pca_sub_cas) > 1:
+                    def remove_sub(idx=i):
+                        self.pca_sub_cas.pop(idx)
+                        render_sub_ca_rows()
+                    ctk.CTkButton(
+                        entry_frame, text="−", command=remove_sub,
+                        height=36, width=36, fg_color="#5a1a1a", hover_color="#8b0000"
+                    ).pack(side="left", padx=(4, 0))
+
+            # Add Sub CA button (shown when fewer than 3 sub CAs)
+            if len(self.pca_sub_cas) < 3:
+                btn_row = ctk.CTkFrame(sub_ca_container, fg_color="transparent")
+                btn_row.pack(fill="x", pady=(4, 0))
+
+                def add_sub_ca():
+                    self.pca_sub_cas.append(None)
+                    render_sub_ca_rows()
+
+                ctk.CTkButton(
+                    btn_row, text="＋  Add Sub CA", command=add_sub_ca,
+                    height=32, width=150, fg_color="#1a3d1a", hover_color="#2d6b2d",
+                    text_color="#5dff5d", font=("Arial", 12, "bold")
+                ).pack()
+
+        render_sub_ca_rows()
+
         make_file_row(card_content, "Root CA", optional=False, attr_name="pca_root_ca")
 
         # Info note
@@ -677,7 +743,7 @@ class AIOSSLToolApp:
             return
 
         try:
-            parts = [self.pca_server_cert, self.pca_sub_ca, self.pca_root_ca]
+            parts = [self.pca_server_cert] + self.pca_sub_cas + [self.pca_root_ca]
             pem_data = ""
             for path in parts:
                 if not path:
@@ -695,7 +761,7 @@ class AIOSSLToolApp:
             self.archive_files([output_path], domain=None)
             # Reset selections
             self.pca_server_cert = None
-            self.pca_sub_ca = None
+            self.pca_sub_cas = [None]
             self.pca_root_ca = None
 
             messagebox.showinfo(
@@ -1693,7 +1759,7 @@ Keep this file secure and never share it."""
             pass
         
         ctk.CTkLabel(icon_frame, text="AIO SSL Suite", font=("Arial", 20, "bold")).pack()
-        ctk.CTkLabel(icon_frame, text="Version V6.3.1", font=("Arial", 12), text_color="gray70").pack(pady=5)
+        ctk.CTkLabel(icon_frame, text="Version V6.4.0", font=("Arial", 12), text_color="gray70").pack(pady=5)
         
         # About Section
         about_frame = ctk.CTkFrame(scroll_frame, corner_radius=12, fg_color="#1a1a1a")
