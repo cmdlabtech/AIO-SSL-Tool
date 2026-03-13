@@ -126,7 +126,7 @@ struct PFXGeneratorView: View {
                                         HStack {
                                             SecureField("Key Passphrase (Optional)", text: $viewModel.keyPassphrase)
                                                 .textFieldStyle(.roundedBorder)
-                                                .onChange(of: viewModel.keyPassphrase) { _ in
+                                                .onChange(of: viewModel.keyPassphrase) {
                                                     passwordVerified = false
                                                     passwordVerificationFailed = false
                                                 }
@@ -237,7 +237,7 @@ struct PFXGeneratorView: View {
                                                     }
                                                 }
                                                 .pickerStyle(.segmented)
-                                                .onChange(of: pfxOptions.macAlgorithm) { newValue in
+                                                .onChange(of: pfxOptions.macAlgorithm) { _, newValue in
                                                     if newValue.isLegacy && !updaterViewModel.neverShowAdvancedOptionsWarning && !showAdvancedOptions {
                                                         showLegacyWarning = true
                                                     }
@@ -260,7 +260,7 @@ struct PFXGeneratorView: View {
                                                     }
                                                 }
                                                 .pickerStyle(.segmented)
-                                                .onChange(of: pfxOptions.encryptionAlgorithm) { newValue in
+                                                .onChange(of: pfxOptions.encryptionAlgorithm) { _, newValue in
                                                     if newValue.isLegacy && !updaterViewModel.neverShowAdvancedOptionsWarning && !showAdvancedOptions {
                                                         showLegacyWarning = true
                                                     }

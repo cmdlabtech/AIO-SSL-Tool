@@ -16,6 +16,9 @@ venv/
 xcuserdata/
 DerivedData/
 
+# Xcode App Store project (local only, not for GitHub distribution)
+macOS/AIOSSLTool/aiossltool/
+
 # macOS build artifacts
 macOS/AIOSSLTool/*.app
 macOS/AIOSSLTool/*.dmg

@@ -73,7 +73,7 @@ struct SettingsView: View {
                                 Toggle(isOn: $updaterViewModel.automaticUpdateChecks) {
                                     Text("Check for updates automatically")
                                 }
-                                .onChange(of: updaterViewModel.automaticUpdateChecks) { _ in
+                                .onChange(of: updaterViewModel.automaticUpdateChecks) {
                                     updaterViewModel.toggleAutomaticUpdates()
                                 }
                                 
@@ -101,7 +101,7 @@ struct SettingsView: View {
                                             .foregroundColor(.secondary)
                                     }
                                 }
-                                .onChange(of: updaterViewModel.neverShowAdvancedOptionsWarning) { newValue in
+                                .onChange(of: updaterViewModel.neverShowAdvancedOptionsWarning) { _, newValue in
                                     if newValue {
                                         showSarcasticWarning = true
                                     }
@@ -118,7 +118,7 @@ struct SettingsView: View {
                                             .foregroundColor(.secondary)
                                     }
                                 }
-                                .onChange(of: updaterViewModel.enableCertificateArchive) { _ in
+                                .onChange(of: updaterViewModel.enableCertificateArchive) {
                                     updaterViewModel.savePreferences()
                                 }
                                 
@@ -132,7 +132,7 @@ struct SettingsView: View {
                                         }
                                     }
                                     .padding(.leading, 20)
-                                    .onChange(of: updaterViewModel.hideArchiveFolder) { _ in
+                                    .onChange(of: updaterViewModel.hideArchiveFolder) {
                                         updaterViewModel.savePreferences()
                                     }
 

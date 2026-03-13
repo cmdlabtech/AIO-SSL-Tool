@@ -12,7 +12,7 @@
     <true/>
     <key>keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)com.cmdlab.aio-ssl-tool</string>
+        <string>$(AppIdentifierPrefix)com.cmdlab.aiossltool</string>
     </array>
 </dict>
 </plist>

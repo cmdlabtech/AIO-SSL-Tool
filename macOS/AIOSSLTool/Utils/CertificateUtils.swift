@@ -98,10 +98,10 @@ enum CertificateUtils {
         let policy = SecPolicyCreateBasicX509()
         
         let status = SecTrustCreateWithCertificates(cert, policy, &trust)
-        guard status == errSecSuccess, let trust = trust else {
+        guard status == errSecSuccess, trust != nil else {
             return false
         }
-        
+
         // Try to get certificate values
         if let values = SecCertificateCopyValues(cert, nil, nil) as? [String: Any] {
             let issuer = values["Issuer"] as? String

@@ -85,7 +85,13 @@ fi
 echo -e "${GREEN}✓ App bundle created${NC}"
 echo ""
 
-echo -e "${BLUE}📦 Step 5: Code signing...${NC}"
+echo -e "${BLUE}📦 Step 5: Removing quarantine attributes...${NC}"
+# Remove quarantine attribute before signing (required for App Store/TestFlight submissions)
+xattr -cr "${APP_BUNDLE}" 2>/dev/null || true
+echo -e "${GREEN}✓ Quarantine attributes removed${NC}"
+echo ""
+
+echo -e "${BLUE}📦 Step 6: Code signing...${NC}"
 # Sign the app bundle
 codesign --force --deep --sign - "${APP_BUNDLE}"
 
@@ -94,12 +100,6 @@ if [ $? -eq 0 ]; then
 else
     echo -e "${YELLOW}⚠️  Warning: Code signing failed, but continuing...${NC}"
 fi
-echo ""
-
-echo -e "${BLUE}📦 Step 6: Removing quarantine attributes...${NC}"
-# Remove quarantine attribute that macOS adds
-xattr -cr "${APP_BUNDLE}" 2>/dev/null || true
-echo -e "${GREEN}✓ Quarantine attributes removed${NC}"
 echo ""
 
 echo -e "${GREEN}🎉 Build Complete!${NC}"

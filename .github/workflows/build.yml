@@ -61,6 +61,9 @@ jobs:
             cp HomeIcon.png AIOSSLTool.app/Contents/Resources/
           fi
           
+          # Remove quarantine attributes before signing
+          xattr -cr AIOSSLTool.app 2>/dev/null || true
+
           # Ad-hoc sign the app bundle
           codesign --force --deep --sign - AIOSSLTool.app
 
