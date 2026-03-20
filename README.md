@@ -1,3 +1,12 @@
+
+~~This is a free tool built for the community - no expectations, no obligations. I genuinely enjoy building it.~~
+
+~~That said, if you'd like to see bigger im provements or help make a Mac App Store re lease possible (which comes with real cost s for signing and distribution), a small donation goes a long way - you can find the BuyMeACoffee link in the Sponsor section of this repo.~~
+
+Either way, thanks for using it!
+
+Update: AIO SSL Tool is now on the App Store! With this, AIO SSL Tool now has a good amount of costs to maintain, develop, and distribute (~$300+/yr). For now, the app will remain free on the store until V7.0 is realeased which will be within the next month. A few of the upcoming feature ADDITIONS will make it worth the costs! 
+
 # AIO SSL Tool
 
 **The fastest way to turn any server certificate into a complete, trusted chain and ready-to-use PFX — in seconds.**
