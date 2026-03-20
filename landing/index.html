@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRISM — PKI Resource and Infrastructure Security Manager</title>
+  <meta name="description" content="The complete SSL/TLS toolkit for engineers. Build certificate chains, generate CSRs, create PFX files, and deploy to ClearPass — all locally, no cloud. 14-day free trial." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            surface: {
+              900: '#0c0c14',
+              800: '#13131f',
+              700: '#1a1a2e',
+              600: '#232338',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+            mono: ['"SF Mono"', '"Cascadia Code"', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+
+    .hero-bg {
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 80% 80%, rgba(79,70,229,0.12) 0%, transparent 60%),
+        #0c0c14;
+    }
+
+    .feature-card {
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 8px 32px rgba(99,102,241,0.08);
+    }
+
+    .pricing-glow {
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.4), 0 20px 60px rgba(99,102,241,0.15);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .platform-badge {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .faq-answer { display: none; }
+    .faq-item.open .faq-answer { display: block; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-chevron { transition: transform 0.2s; }
+
+    @keyframes subtle-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+      50%       { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+    }
+    .btn-purchase { animation: subtle-pulse 3s ease-in-out infinite; }
+
+    .code-chip {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sale-badge {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+  </style>
+</head>
+<body class="bg-surface-900 text-white antialiased">
+
+  <!-- ───── NAV ───── -->
+  <nav class="fixed top-0 inset-x-0 z-50 border-b border-white/5 backdrop-blur-md bg-surface-900/80">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Prism icon -->
+        <svg class="w-7 h-7 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <polygon points="12 2 22 21 2 21"/>
+          <line x1="12" y1="2" x2="7" y2="21" stroke-opacity="0.4"/>
+          <line x1="12" y1="2" x2="17" y2="21" stroke-opacity="0.4"/>
+        </svg>
+        <span class="font-semibold text-base tracking-tight">PRISM</span>
+      </div>
+      <div class="hidden sm:flex items-center gap-8 text-sm text-white/60">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#pricing"  class="hover:text-white transition-colors">Pricing</a>
+        <a href="#faq"      class="hover:text-white transition-colors">FAQ</a>
+      </div>
+      <a href="#pricing"
+         class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 transition-colors text-sm font-medium">
+        Get License
+      </a>
+    </div>
+  </nav>
+
+  <!-- ───── HERO ───── -->
+  <section class="hero-bg pt-40 pb-28 px-6 text-center">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- Platform badges -->
+      <div class="flex justify-center gap-3 mb-8">
+        <span class="platform-badge inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-white/70">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98l-.09.06c-.22.16-2.18 1.27-2.16 3.79.02 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.37 2.79M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          macOS 14+
+        </span>
+        <span class="platform-badge inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-white/70">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M3 12V6.75l9-5.25 9 5.25V12c0 5.25-3.75 9.75-9 11.25C6.75 21.75 3 17.25 3 12zm1.5-1.125V12c0 4.5 3.15 8.625 7.5 10.125 4.35-1.5 7.5-5.625 7.5-10.125v-1.125l-7.5-4.5-7.5 4.5z"/></svg>
+          Windows 10/11
+        </span>
+      </div>
+
+      <h1 class="text-5xl sm:text-6xl font-bold tracking-tight mb-6 leading-tight">
+        Every cert tool<br/>
+        <span class="grad-text">in one place.</span>
+      </h1>
+
+      <p class="text-lg text-white/60 max-w-xl mx-auto mb-10 leading-relaxed">
+        From CSR generation to a fully signed, chained PFX bundle — PRISM handles the complete
+        certificate lifecycle locally on your device. No cloud. No command line. No nonsense.
+      </p>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/latest" target="_blank"
+           class="btn-purchase w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors font-semibold text-base">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Start Free 14-Day Trial
+        </a>
+        <a href="#pricing"
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all font-medium text-base text-white/80 hover:text-white">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Buy License — $29.99
+        </a>
+      </div>
+
+      <p class="mt-10 text-sm text-white/30">
+        No credit card for trial · Local-only processing · Trusted by sysadmins &amp; network engineers
+      </p>
+    </div>
+  </section>
+
+  <!-- ───── FEATURES ───── -->
+  <section id="features" class="py-24 px-6 bg-surface-800">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Seven tools. One workflow.</h2>
+        <p class="text-white/50 max-w-lg mx-auto">Start from a blank slate and finish with a deployed, production-ready certificate — without leaving the app.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">CSR Generator</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Generate RFC-compliant Certificate Signing Requests with SANs, key usage fields, and your choice of RSA or ECC keys — ready to submit to any CA.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">Chain Builder</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Drop in a server cert and get a complete, ordered chain back — root, intermediates, and leaf — automatically assembled from your system's trust store.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">Custom Chain Builder</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Manually assemble a chain from your own files. Supply certs in any order — PRISM validates and outputs a clean, correctly ordered PEM bundle.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">PFX / P12 Generator</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Bundle your certificate chain and private key into a password-protected PFX archive ready for IIS, F5, Palo Alto, and more.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">Key Extractor</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Pull private keys and certificates out of any PFX/P12 file in one step. No OpenSSL commands to remember.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">Crypt Walk</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Inspect any cert file at a glance — subject, issuer, SANs, validity dates, key algorithm, and more. Instantly know what you're working with.
+          </p>
+        </div>
+
+        <div class="feature-card bg-surface-700 border border-white/8 rounded-2xl p-6 sm:col-span-2 lg:col-span-1">
+          <div class="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center mb-5">
+            <svg class="w-5 h-5 text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          </div>
+          <h3 class="font-semibold text-white mb-2">ClearPass Deploy</h3>
+          <p class="text-sm text-white/50 leading-relaxed">
+            Push certificates directly to Aruba ClearPass over the REST API — discover servers, select a service, and upload without leaving the app.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── WHY PRISM ───── -->
+  <section class="py-24 px-6">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <p class="text-brand-400 text-sm font-semibold uppercase tracking-widest mb-4">Why PRISM</p>
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-6">Start from nothing.<br/>Ship a perfect cert.</h2>
+          <p class="text-white/50 leading-relaxed mb-8">
+            SSL work shouldn't require memorizing OpenSSL flags or hunting for which intermediate goes where.
+            PRISM handles the full certificate lifecycle — CSR to signed cert to chained PFX — in a single
+            app, without a terminal or cloud service in sight.
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-white/70 text-sm">100% local — no data ever leaves your device</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-white/70 text-sm">Native apps — no Electron, no Java runtime, no Python env to manage</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-white/70 text-sm">NIST SP 800-57 compliant defaults — SHA-256+, AES-256, RSA ≥ 2048</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-white/70 text-sm">One-time license — pay once, yours forever</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Terminal vs PRISM comparison -->
+        <div class="space-y-4">
+          <div class="bg-surface-800 border border-white/8 rounded-xl p-5">
+            <p class="text-xs font-mono text-red-400/70 mb-3">// Without PRISM</p>
+            <div class="space-y-1.5">
+              <p class="font-mono text-xs text-white/40 code-chip px-3 py-1.5 rounded-lg">openssl genrsa -out server.key 2048</p>
+              <p class="font-mono text-xs text-white/40 code-chip px-3 py-1.5 rounded-lg">openssl req -new -key server.key -out server.csr ...</p>
+              <p class="font-mono text-xs text-white/40 code-chip px-3 py-1.5 rounded-lg">cat server.crt intermediate.crt root.crt &gt; chain.pem</p>
+              <p class="font-mono text-xs text-white/40 code-chip px-3 py-1.5 rounded-lg">openssl pkcs12 -export -out bundle.pfx -inkey ...</p>
+              <p class="font-mono text-xs text-white/30 code-chip px-3 py-1.5 rounded-lg">openssl verify -CAfile root.crt chain.pem</p>
+            </div>
+          </div>
+          <div class="bg-surface-800 border border-brand-500/30 rounded-xl p-5">
+            <p class="text-xs font-mono text-brand-400/80 mb-3">// With PRISM</p>
+            <div class="flex items-center gap-3 code-chip px-3 py-3 rounded-lg">
+              <svg class="w-5 h-5 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="text-sm text-white/60">Generate CSR → build chain → export PFX → deploy. Done.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── PRICING ───── -->
+  <section id="pricing" class="py-24 px-6 bg-surface-800">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Simple, honest pricing</h2>
+        <p class="text-white/50">Try free for 14 days. Pay once. Use forever.</p>
+      </div>
+
+      <div class="flex flex-col lg:flex-row gap-8 items-stretch justify-center max-w-4xl mx-auto">
+
+        <!-- Free Trial -->
+        <div class="flex-1 bg-surface-700 border border-white/8 rounded-2xl p-8 flex flex-col">
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-white/50 uppercase tracking-widest mb-3">Free Trial</p>
+            <div class="flex items-end gap-2 mb-1">
+              <span class="text-4xl font-bold">$0</span>
+            </div>
+            <p class="text-white/40 text-sm">Full access for 14 days</p>
+          </div>
+          <ul class="space-y-3 mb-8 flex-1">
+            <li class="flex items-center gap-3 text-sm text-white/60">
+              <svg class="w-4 h-4 text-white/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              All 7 tools, no restrictions
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/60">
+              <svg class="w-4 h-4 text-white/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              No credit card required
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/60">
+              <svg class="w-4 h-4 text-white/30 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              macOS + Windows
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/30 line-through">
+              <svg class="w-4 h-4 text-white/20 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              License key activation
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/30 line-through">
+              <svg class="w-4 h-4 text-white/20 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Priority support
+            </li>
+          </ul>
+          <a href="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/latest" target="_blank"
+             class="block text-center py-3 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all text-sm font-medium text-white/60 hover:text-white">
+            Download Free Trial
+          </a>
+        </div>
+
+        <!-- Lifetime License -->
+        <div class="flex-1 bg-surface-900 border border-brand-500/40 rounded-2xl p-8 flex flex-col relative pricing-glow">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <span class="sale-badge text-white text-xs font-semibold px-4 py-1.5 rounded-full tracking-wide">
+              LAUNCH SALE
+            </span>
+          </div>
+
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-brand-400 uppercase tracking-widest mb-3">Lifetime License</p>
+            <div class="flex items-end gap-3 mb-1">
+              <span class="text-4xl font-bold">$29.99</span>
+              <span class="text-white/30 text-lg line-through mb-1">$34.99</span>
+            </div>
+            <p class="text-white/40 text-sm">macOS + Windows · All future updates</p>
+          </div>
+
+          <ul class="space-y-3 mb-8 flex-1">
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              All 7 tools, unlimited use
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Activate on up to 2 devices
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              One key works on macOS &amp; Windows
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Transfer to a new device anytime
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              All future updates included
+            </li>
+            <li class="flex items-center gap-3 text-sm text-white/80">
+              <svg class="w-4 h-4 text-brand-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Priority email support
+            </li>
+          </ul>
+
+          <!-- Purchase button — replace href with LemonSqueezy checkout link -->
+          <a id="purchase-btn"
+             href="#"
+             class="btn-purchase block text-center py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors font-semibold text-base">
+            Buy License — $29.99
+          </a>
+          <p class="text-center text-xs text-white/30 mt-3">
+            Secure payment · Instant key delivery by email · 30-day refund
+          </p>
+        </div>
+
+      </div>
+
+      <!-- License note -->
+      <p class="text-center text-sm text-white/30 mt-10 max-w-lg mx-auto">
+        One license key. Up to 2 devices, any platform. Transfer to a new device at any time from Settings.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───── FAQ ───── -->
+  <section id="faq" class="py-24 px-6">
+    <div class="max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight text-center mb-12">Frequently asked questions</h2>
+
+      <div class="space-y-3" id="faq-list">
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">How does the 14-day trial work?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            Download PRISM and start the trial on first launch — no credit card, no account. You get full access to all 7 tools for 14 days. After the trial ends, enter a license key to continue.
+          </div>
+        </div>
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">How do I activate my license?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            After purchase, you'll receive a license key by email within minutes. Open PRISM, go to Settings, and paste your key. Activation requires a one-time internet connection — after that, the app works fully offline.
+          </div>
+        </div>
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">How many devices can I use it on?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            One license key activates up to 2 devices — any mix of macOS and Windows. If you get a new device, use the Transfer License option in Settings to free up a slot and activate on the new one.
+          </div>
+        </div>
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">Do I get future updates?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            Yes. All updates are included with your license. If a future major version introduces a significantly different product, existing license holders will receive a generous discount on the upgrade.
+          </div>
+        </div>
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">Does it phone home or require internet?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            Never for certificate work. All cryptographic operations are 100% local — your private keys, CSRs, and cert files never touch a server. The only outbound connections are license activation (one-time) and the optional auto-update check.
+          </div>
+        </div>
+
+        <div class="faq-item bg-surface-800 border border-white/8 rounded-xl overflow-hidden">
+          <button class="faq-trigger w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-sm">Is there a refund policy?</span>
+            <svg class="faq-chevron w-4 h-4 text-white/40 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer px-6 pb-5 text-sm text-white/50 leading-relaxed">
+            Yes — 30-day no-questions-asked refund. If PRISM doesn't work for your use case, email the support address on your receipt and you'll get a full refund within 48 hours.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── FINAL CTA ───── -->
+  <section class="py-24 px-6 bg-surface-800 text-center">
+    <div class="max-w-xl mx-auto">
+      <h2 class="text-3xl font-bold tracking-tight mb-4">Ready to stop fighting OpenSSL?</h2>
+      <p class="text-white/50 mb-10">Start free. No credit card. No cloud.</p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="https://github.com/cmdlabtech/AIO-SSL-Tool/releases/latest" target="_blank"
+           class="btn-purchase w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors font-semibold text-base">
+          Start Free 14-Day Trial
+        </a>
+        <a href="#pricing"
+           class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all font-medium text-base text-white/60 hover:text-white">
+          View Pricing
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── FOOTER ───── -->
+  <footer class="border-t border-white/5 py-10 px-6">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-white/30">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <polygon points="12 2 22 21 2 21"/>
+          <line x1="12" y1="2" x2="7" y2="21" stroke-opacity="0.4"/>
+          <line x1="12" y1="2" x2="17" y2="21" stroke-opacity="0.4"/>
+        </svg>
+        <span>PRISM by CmdLab</span>
+      </div>
+      <div class="flex items-center gap-6">
+        <a href="https://github.com/cmdlabtech/AIO-SSL-Tool" target="_blank" class="hover:text-white/60 transition-colors">GitHub</a>
+        <a href="https://github.com/cmdlabtech/AIO-SSL-Tool/blob/main/PRIVACY.md" target="_blank" class="hover:text-white/60 transition-colors">Privacy</a>
+        <a href="https://github.com/cmdlabtech/AIO-SSL-Tool/blob/main/LICENSE" target="_blank" class="hover:text-white/60 transition-colors">License</a>
+      </div>
+      <p>© 2026 CmdLab · Made for engineers</p>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.faq-trigger').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!isOpen) item.classList.add('open');
+      });
+    });
+  </script>
+</body>
+</html>
