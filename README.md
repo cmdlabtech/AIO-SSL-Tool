@@ -1,12 +1,13 @@
-## ☕ Support
 
-This is a free tool built for the community — no expectations, no obligations. I genuinely enjoy building it.
+~~This is a free tool built for the community - no expectations, no obligations. I genuinely enjoy building it.~~
 
-That said, if you'd like to see bigger improvements or help make a Mac App Store release possible (which comes with real costs for signing and distribution), a small donation goes a long way — you can find the BuyMeACoffee link in the Sponsor section of this repo.
+~~That said, if you'd like to see bigger im provements or help make a Mac App Store re lease possible (which comes with real cost s for signing and distribution), a small donation goes a long way - you can find the BuyMeACoffee link in the Sponsor section of this repo.~~
 
 Either way, thanks for using it!
 
+Update: AIO SSL Tool is now on the App Store! With this, AIO SSL Tool now has a good amount of costs to maintain, develop, and distribute (~$300+/yr). The current V6.4.0 release will be the last free version for both Windows and MacOS and V7.0 will be the first paid iteration of the app with a lot of cleanup, NEW tools added, and a complete rewrite and rebuild of the Windows version that should make it all worth it long-term.  
 
+P.s. - new name coming 👀
 
 # AIO SSL Tool
 
