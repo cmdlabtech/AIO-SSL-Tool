@@ -7,6 +7,8 @@ Either way, thanks for using it!
 
 Update: AIO SSL Tool is now on the App Store! With this, AIO SSL Tool now has a good amount of costs to maintain, develop, and distribute (~$300+/yr). For now, the app will remain free on the store until V7.0 is realeased which will be within the next month. A few of the upcoming feature ADDITIONS will make it worth the costs! 
 
+P.s. - new name coming 👀
+
 # AIO SSL Tool
 
 **The fastest way to turn any server certificate into a complete, trusted chain and ready-to-use PFX — in seconds.**
