@@ -240,23 +240,6 @@ class SSLToolViewModel: ObservableObject {
         }
     }
     
-    func extractPrivateKey(pfxPath: URL, password: String, savePath: URL) {
-        Task {
-            do {
-                let pfxData = try Data(contentsOf: pfxPath)
-                let privateKeyPEM = try CertificateUtils.extractPrivateKey(
-                    from: pfxData,
-                    password: password
-                )
-                
-                try privateKeyPEM.write(to: savePath, atomically: true, encoding: .utf8)
-                showSuccess("Private key extracted successfully!")
-            } catch {
-                showError("Failed to extract private key: \(error.localizedDescription)")
-            }
-        }
-    }
-    
     func showError(_ message: String) {
         errorMessage = message
         statusMessage = "Error"

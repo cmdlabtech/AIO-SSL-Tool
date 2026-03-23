@@ -8,15 +8,13 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = SSLToolViewModel()
     @State private var selectedTool: Tool? = .home
+    @State private var showPRISMNotice: Bool = false
 
     enum Tool: String, CaseIterable, Identifiable {
         case home = "Home"
         case csrGenerator = "CSR Generator"
         case chainBuilder = "Chain Builder"
-        case privateCAChain = "Private CA Chain"
         case pfxGenerator = "PFX Generator"
-        case keyExtractor = "Key Extractor"
-        case clearPass = "ClearPass"
         case settings = "Settings"
 
         var id: String { rawValue }
@@ -25,10 +23,7 @@ struct ContentView: View {
             case .home: return "house.fill"
             case .csrGenerator: return "doc.badge.plus"
             case .chainBuilder: return "link.circle.fill"
-            case .privateCAChain: return "rectangle.stack.badge.plus"
             case .pfxGenerator: return "shippingbox.fill"
-            case .keyExtractor: return "key.fill"
-            case .clearPass: return "wifi.circle.fill"
             case .settings: return "gearshape.fill"
             }
         }
@@ -56,14 +51,8 @@ struct ContentView: View {
                         CSRGenerationView(viewModel: viewModel)
                     case .chainBuilder:
                         ChainBuilderView(viewModel: viewModel)
-                    case .privateCAChain:
-                        PrivateCAChainView(viewModel: viewModel)
                     case .pfxGenerator:
                         PFXGeneratorView(viewModel: viewModel)
-                    case .keyExtractor:
-                        ExtractPFXView(viewModel: viewModel)
-                    case .clearPass:
-                        ClearPassView(viewModel: viewModel)
                     case .settings:
                         SettingsView()
                     }
@@ -75,5 +64,23 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .frame(minWidth: 900, minHeight: 750)
+        .onAppear {
+            if !UserDefaults.standard.bool(forKey: "prismNoticeShown_6.4.1") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showPRISMNotice = true
+                }
+            }
+        }
+        .alert("AIO SSL Tool Has Grown", isPresented: $showPRISMNotice) {
+            Button("Learn More") {
+                UserDefaults.standard.set(true, forKey: "prismNoticeShown_6.4.1")
+                NSWorkspace.shared.open(URL(string: "https://prism.cmdlab.tech")!)
+            }
+            Button("Dismiss") {
+                UserDefaults.standard.set(true, forKey: "prismNoticeShown_6.4.1")
+            }
+        } message: {
+            Text("AIO SSL Tool has evolved into PRISM — a full PKI and certificate management suite.\n\nVisit prism.cmdlab.tech to download PRISM and purchase a license key.")
+        }
     }
 }

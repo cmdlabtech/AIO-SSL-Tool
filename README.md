@@ -5,9 +5,10 @@
 
 Either way, thanks for using it!
 
-Update: AIO SSL Tool is now on the App Store! With this, AIO SSL Tool now has a good amount of costs to maintain, develop, and distribute. The current V6.4.0 release will be the last free version for both Windows and MacOS and V7.0 will be the first paid iteration of the app with a lot of cleanup, NEW tools added, and a complete rewrite and rebuild of the Windows version that should make it all worth it long-term.  
+**AIO SSL Tool has grown into [PRISM](https://prism.cmdlab.tech) — a full PKI and certificate management suite.**
+Visit [prism.cmdlab.tech](https://prism.cmdlab.tech) to download PRISM and purchase a license key.
 
-P.s. - new name coming 👀
+V6.4.3 is the final release of AIO SSL Tool.
 
 # AIO SSL Tool
 
@@ -20,8 +21,8 @@ A native macOS application and cross-platform desktop tool built for sysadmins a
 - **🔐 CSR Generation** - Create Certificate Signing Requests and Private Keys with an intuitive interface
 - **🔗 Full Chain Building** - Automatically constructs complete certificate chains from server certificates
 - **📦 PFX/P12 Creation** - Build PFX files with full chain and private key
-- **🔓 PFX Extraction** - Extract certificates and private keys from existing PFX files
-- **� Auto-Updates (macOS)** - Seamlessly receive and install updates automatically
+
+---
 - **🔒 Privacy First** - All processing happens locally on your machine
 - **⚡ Fast & Lightweight** - Native Swift on macOS, efficient Python on Windows
 
@@ -30,8 +31,8 @@ A native macOS application and cross-platform desktop tool built for sysadmins a
 
 | Platform | Download | Requirements |
 |----------|----------|--------------|
-| **🍎 macOS** | [**Download DMG (V6.4.0)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.4.0/AIO-SSL-Tool-macOS-V6.4.0.dmg) | macOS 14.0+ (Sonoma/Sequoia) |
-| **🪟 Windows** | [**Download EXE (V6.4.0)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.4.0/AIO-SSL-Tool-Windows-V6.4.0.exe) | Windows 10/11 |
+| **🍎 macOS** | [**Download DMG (V6.4.3)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.4.3/AIO-SSL-Tool-macOS-V6.4.3.dmg) | macOS 14.0+ (Sonoma/Sequoia) |
+| **🪟 Windows** | [**Download EXE (V6.4.3)**](https://github.com/cmdlabtech/AIO-SSL-Tool/releases/download/V6.4.3/AIO-SSL-Tool-Windows-V6.4.3.exe) | Windows 10/11 |
 
 ### Installation
 
@@ -40,15 +41,6 @@ The app is unsigned, so on first launch you'll need to right-click the app and s
 
 **Windows:**  
 Run the EXE directly. If Windows Defender warns you, click "More info" → "Run anyway".
-
-## ClearPass API: Generating Client ID + Secret
-
-ClearPass Guest -> Administration -> API Clients -> Create API Client
-
-Match picture below for generating Client ID and Client Secret
-
-![alt text](image.png)
-Note: You can adjust Access Token Lifetime to a shorter window for better security practices. Every time you want to use this feature of the tool, a new secret will have to be generated. 
 
 ## 📝 License
 
