@@ -41,7 +41,7 @@ If you'd like to support continued development, you can [donate via PayPal](http
 
 ## 📝 License
 
-MIT License - Copyright © 2026
+MIT License - Copyright © 2026 CMDLAB LLC
 
 ---
 

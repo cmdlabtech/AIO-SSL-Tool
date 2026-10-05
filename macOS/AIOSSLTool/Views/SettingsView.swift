@@ -204,7 +204,7 @@ struct SettingsView: View {
                     
                     Spacer()
                     
-                    Text("© 2026 CMDLAB. All rights reserved.")
+                    Text("© 2026 CMDLAB LLC. All rights reserved.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.bottom)

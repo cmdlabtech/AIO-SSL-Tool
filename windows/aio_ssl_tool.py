@@ -983,7 +983,7 @@ class AIOSSLToolApp:
             ctk.CTkButton(wd_content, text="Set Directory", command=self.select_save_directory, height=36).pack(anchor="w", pady=(10, 0))
         
         # Copyright footer
-        ctk.CTkLabel(scroll_frame, text="© 2026 CMDLAB. All rights reserved.", font=("Arial", 9), text_color="gray60").pack(pady=(30, 20))
+        ctk.CTkLabel(scroll_frame, text="© 2026 CMDLAB LLC. All rights reserved.", font=("Arial", 9), text_color="gray60").pack(pady=(30, 20))
     
     def toggle_advanced_warning(self):
         """Toggle advanced options warning preference"""
