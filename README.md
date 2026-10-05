@@ -1,10 +1,3 @@
-
-~~This is a free tool built for the community - no expectations, no obligations. I genuinely enjoy building it.~~
-
-~~That said, if you'd like to see bigger im provements or help make a Mac App Store re lease possible (which comes with real cost s for signing and distribution), a small donation goes a long way - you can find the BuyMeACoffee link in the Sponsor section of this repo.~~
-
-Either way, thanks for using it!
-
 **AIO SSL Tool has grown into [PRISM](https://prism.cmdlab.tech) — a full PKI and certificate management suite.**
 Visit [prism.cmdlab.tech](https://prism.cmdlab.tech) to download PRISM and purchase a license key.
 
@@ -41,6 +34,10 @@ The app is unsigned, so on first launch you'll need to right-click the app and s
 
 **Windows:**  
 Run the EXE directly. If Windows Defender warns you, click "More info" → "Run anyway".
+
+## Support
+
+If you'd like to support continued development, you can [donate via PayPal](https://www.paypal.com/donate/?hosted_button_id=Z5SDZULELYGNS).
 
 ## 📝 License
 
