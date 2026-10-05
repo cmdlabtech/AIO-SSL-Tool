@@ -37,7 +37,7 @@ Run the EXE directly. If Windows Defender warns you, click "More info" → "Run 
 
 ## Support
 
-If you'd like to support continued development, you can [donate via PayPal](https://www.paypal.com/donate/?hosted_button_id=Z5SDZULELYGNS).
+If you'd like to support continued development, you can [donate via PayPal](https://cmdlab.tech/donate).
 
 ## 📝 License
 
